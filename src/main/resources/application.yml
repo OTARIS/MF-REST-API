@@ -1,0 +1,13 @@
+spring:
+  profiles: test
+name: test-YAML
+company: OTARIS
+environment: test
+defaultNetwork: nutrisafe
+networkConfigPath: connection.json
+privateKeyFile: private-key.pem
+databaseConfig:
+  username: postgres
+  password: GRm%m5cgTmw3S&kjxV
+  host: //localhost
+  port: 5432

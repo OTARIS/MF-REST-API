@@ -126,3 +126,5 @@ gradle-app.setting
 **/build/
 
 # End of https://www.toptal.com/developers/gitignore/api/java,gradle,intellij
+*.ppk
+*.pem

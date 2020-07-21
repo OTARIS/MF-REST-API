@@ -22,11 +22,13 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation 'org.hyperledger.fabric:fabric-gateway-java:1.4.3'
+    //implementation 'org.hyperledger.fabric:fabric-gateway-java:1.4.3'
+    implementation 'org.hyperledger.fabric:fabric-gateway-java:2.2.0'
     implementation 'org.postgresql:postgresql:42.2.12'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.11.0'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.10.0.pr3'
     implementation 'com.auth0:java-jwt:3.10.3'
+    implementation 'com.google.code.gson:gson:2.8.6'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }

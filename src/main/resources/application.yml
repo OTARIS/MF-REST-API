@@ -1,13 +1,14 @@
 spring:
   profiles: test
 name: test-YAML
-company: OTARIS
+company: DeoniMSP
 environment: test
-defaultNetwork: nutrisafe
+defaultNetwork: cheese
 networkConfigPath: connection.json
-privateKeyFile: private-key.pem
+privateKeyFile: Admin@deoni.de-cert.pem
+certFile: 0e490ff87805061de3df2582808389b0e7d348dc64def1b011c766cb55ba5d53_sk
 databaseConfig:
   username: postgres
-  password: GRm%m5cgTmw3S&kjxV
+  password: Blender123
   host: //localhost
   port: 5432

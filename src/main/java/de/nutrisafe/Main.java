@@ -12,7 +12,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @SpringBootApplication(exclude={DataSourceAutoConfiguration.class})
 @PropertySource("classpath:application.properties")
-@ComponentScan(basePackages = {"de.nutrisafe"})
+//@ComponentScan(basePackages = {"de.nutrisafe"})
 public class Main implements WebMvcConfigurer {
 
     public static void main(String[] args) {

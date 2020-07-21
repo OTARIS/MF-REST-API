@@ -37,8 +37,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests(authorize -> authorize
                 .antMatchers("/auth").permitAll()
-                .antMatchers("/get").hasAuthority("ROLE_USER")
-                .antMatchers("/submit").hasAuthority("ROLE_ADMIN")
+                .antMatchers("/get").permitAll()//hasAuthority("ROLE_USER")
+                .antMatchers("/submit").permitAll() //hasAuthority("ROLE_ADMIN")
         ).formLogin().disable().csrf().disable().rememberMe().and().apply(new JwtConfigurer(jwtTokenProvider));
     }
 

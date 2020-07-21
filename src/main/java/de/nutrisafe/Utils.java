@@ -1,14 +1,17 @@
 package de.nutrisafe;
 
 import org.hyperledger.fabric.gateway.*;
-import org.hyperledger.fabric.gateway.impl.InMemoryWallet;
+//import org.hyperledger.fabric.gateway.impl.InMemoryWallet;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.ResourceUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -20,7 +23,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Objects;
+import java.util.HashMap;
 import java.util.concurrent.TimeoutException;
 
 public class Utils {
@@ -29,21 +32,24 @@ public class Utils {
     Config config;
 
     public Wallet loadWallet() throws IOException, CertificateException {
-        Wallet wallet = new InMemoryWallet();
-        wallet.put(config.getCompany(), Wallet.Identity.createIdentity(config.getCompany(),
-                Objects.requireNonNull(loadCertificate()).toString(), loadPrivateKey()));
+
+        Wallet wallet = Wallets.newInMemoryWallet();
+        //wallet.put(config.getCompany(), Wallet.Identity.createIdentity(config.getCompany(),
+        //        Objects.requireNonNull(loadCertificate()).toString(), loadPrivateKey()));
+        wallet.put("DeoniAdmin", Identities.newX509Identity("DeoniMSP", loadCertificate(), loadPrivateKey()));
         return wallet;
     }
 
+
+
     private X509Certificate loadCertificate() throws CertificateException {
         try {
-            File file = ResourceUtils.getFile("classpath:cert.cer");
-            String base64Cert = new String(Files.readAllBytes(file.toPath()));
-            byte[] encodedCert = Base64.getDecoder().decode(base64Cert);
+            File file = ResourceUtils.getFile("classpath:Admin@deoni.de-cert.pem");
+            byte[] encodedCert = Files.readAllBytes(file.toPath());
             ByteArrayInputStream inputStream = new ByteArrayInputStream(encodedCert);
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             return (X509Certificate) certFactory.generateCertificate(inputStream);
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.err.println("[NutriSafe REST API] Could not load certificate.");
             e.printStackTrace();
         }
@@ -52,15 +58,14 @@ public class Utils {
 
     public PrivateKey loadPrivateKey() {
         try {
-            File file = ResourceUtils.getFile("classpath:private-key.pem");
+            File file = ResourceUtils.getFile("classpath:0e490ff87805061de3df2582808389b0e7d348dc64def1b011c766cb55ba5d53_sk");
             String privateKeyPEM = new String(Files.readAllBytes(file.toPath()));
-            privateKeyPEM = privateKeyPEM.replace("-----BEGIN PRIVATE KEY-----\n", "");
-            privateKeyPEM = privateKeyPEM.replace("-----END PRIVATE KEY-----", "");
+            privateKeyPEM = privateKeyPEM.replaceAll("\\n|-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----", "");
             byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
+            KeyFactory kf = KeyFactory.getInstance("EC");
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
             return kf.generatePrivate(keySpec);
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+        } catch (Exception e) {
             System.err.println("[NutriSafe REST API] Could not load private key.");
             e.printStackTrace();
         }
@@ -69,26 +74,26 @@ public class Utils {
 
     /**
      * Setting up a connection to the "NutriSafe" Network.
-     * @param contract_p the contract proposal
      * @return returning the contract which is used for submitting or evaluate a transaction.
      */
-    private Contract prepareTransaction(final String contract_p) {
+    private Contract prepareTransaction() {
         Contract contract = null;
         try {
             /*
              * Preparing a builder for our Gateway.
              * .discovery(): Service discovery for all transaction submissions is enabled.
-             */
+            */
+            Path networkConfigFile = ResourceUtils.getFile("classpath:connection.json").toPath();
             Gateway.Builder builder = Gateway.createBuilder()
-                    .identity(loadWallet(), config.getCompany())
-                    .networkConfig(Paths.get(config.getNetworkConfigPath()))
-                    .discovery(true);
+                    .identity(loadWallet(), "DeoniAdmin")
+                    .networkConfig(networkConfigFile);
+                    //.discovery(true);
 
             final Gateway gateway = builder.connect();
 
-            final Network network = gateway.getNetwork(config.getDefaultNetwork());
+            final Network network = gateway.getNetwork("cheese");
 
-            contract = network.getContract(contract_p);
+            contract = network.getContract("nutrisafe-chaincode");
 
         } catch (IOException | CertificateException e) {
             System.err.println("Could not prepare the transaction.");
@@ -97,37 +102,52 @@ public class Utils {
         return contract;
     }
 
-    public String submitTransaction(final String contract_p, final String[] query) {
+    public String submitTransaction(final String function, String[] args, HashMap<String, byte[]> pArgs) {
         String ret = "";
+        System.out.println("Function:" + function);
+        System.out.println("Args: "+ args);
         try {
-            Contract contract = prepareTransaction(contract_p);
+            Contract contract = prepareTransaction();
             if(contract == null) throw new IOException();
-
-            final byte[] result = contract.submitTransaction(Arrays.toString(query));
-
+            final byte[] result;
+            if (pArgs.size() == 0){
+                result = contract.createTransaction(function)
+                        .submit(args);
+            }
+            else {
+                result = contract.createTransaction(function)
+                        .setTransient(pArgs)
+                        .submit(args);
+            }
             ret = Arrays.toString(result);
 
         } catch (IOException | TimeoutException | ContractException | InterruptedException e) {
             e.printStackTrace();
+            System.out.println(e);
         }
-
         return ret;
     }
 
-    public String evaluateTransaction(final String contract_p, final String[] query) {
+    public String evaluateTransaction(final String function, final String[] args) throws Exception {
         String ret = "";
         try {
-            Contract contract = prepareTransaction(contract_p);
+            Contract contract = prepareTransaction();
             if(contract == null) throw new IOException();
-
-            final byte[] result = contract.evaluateTransaction(Arrays.toString(query));
-
-            ret = Arrays.toString(result);
+            byte[] result;
+            if (args == null){
+                result = contract.evaluateTransaction(function);
+            }
+            else {
+                result = contract.evaluateTransaction(function, args);
+            }
+            System.out.println(new String(result, StandardCharsets.UTF_8));
+            ret = new String(result, StandardCharsets.UTF_8);
+            //ret = Arrays.toString(result);
 
         } catch (IOException | ContractException e) {
             e.printStackTrace();
+            System.out.println(e);
         }
-
         return ret;
     }
 }

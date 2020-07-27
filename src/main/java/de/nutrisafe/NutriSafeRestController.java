@@ -45,14 +45,20 @@ public class NutriSafeRestController {
 
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> get(@RequestParam String function, @RequestParam(required = false) String[] args) {
+
         try {
             User user = persistenceManager.getCurrentUser();
             if(user == null)
                 throw new UsernameNotFoundException("Username not found");
             else {
-                Map<Object, Object> model = new HashMap<>();
-                model.put("response", helper.evaluateTransaction(function, args));
-                return ok(model);
+                String response = helper.evaluateTransaction(function, args);
+                JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
+                if (responseJson.get("status").toString().equals("\"200\"")){
+                    return ok(responseJson.get("response").toString());
+                }
+                else {
+                    return badRequest().body(responseJson.get("response").toString());
+                }
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());
@@ -60,20 +66,35 @@ public class NutriSafeRestController {
         }
     }
 
+    @PostMapping(value = "/select", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> select(@RequestBody String body) {
+        try {
+            JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
+            String[] args = {bodyJson.toString()};
+            String response = helper.evaluateTransaction("queryChaincodeByQueryString", args);
+            JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
+            return ok(responseJson.get("response").toString());
+        }
+        catch (Exception e){
+                System.err.println(e.getMessage());
+                return ResponseEntity.badRequest().build();
+            }
+    }
+
     @PostMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> submit(@RequestParam String function, @RequestBody String body) {
+    public ResponseEntity<?> submit(@RequestParam String function, @RequestBody(required = false) String body) {
         try {
             User user = persistenceManager.getCurrentUser();
             if(user == null)
                 throw new UsernameNotFoundException("Username not found");
             else {
-                Map<Object, Object> model = new HashMap<>();
                 JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
                 File jsonFile = ResourceUtils.getFile("classpath:key_defs.json");
                 JsonObject keyDefsJson = (JsonObject) JsonParser.parseString( FileUtils.readFileToString(jsonFile, StandardCharsets.UTF_8));
 
                 HashMap<String, String> keyDefs  = new Gson().fromJson(keyDefsJson, new TypeToken<HashMap<String, String>>() {}.getType());
                 ArrayList<String> attributesToPass = new ArrayList<>();
+                //iterate over the allowed key definitions. If the request body contains this key, the value will be added to attributesToPass
                 for (Map.Entry<String, String> entry : keyDefs.entrySet()) {
                     if (bodyJson.has(entry.getValue())){
                         attributesToPass.add(bodyJson.get(entry.getValue()).toString().replace("\"",""));
@@ -88,11 +109,15 @@ public class NutriSafeRestController {
                         pArgsByteMap.put(entry.getKey(), entry.getValue().getBytes());
                     }
                 }
-                System.out.println("Function:" + function);
-                System.out.println("Attributes" + attributesToPass);
-                System.out.println("Private attributes: " + pArgsByteMap);
-                model.put("response", helper.submitTransaction(function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap));
-                return ok(model);
+                String response = helper.submitTransaction(function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
+                JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
+
+                if (responseJson.get("status").toString().equals("\"200\"")){
+                    return ok(responseJson.get("response").toString());
+                }
+                else {
+                    return badRequest().body(responseJson.get("response").toString());
+                }
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());
@@ -127,5 +152,4 @@ public class NutriSafeRestController {
             throw new BadCredentialsException("Invalid username/password supplied");
         }
     }
-
 }

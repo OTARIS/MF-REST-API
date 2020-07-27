@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 
 public class Utils {
 
+    //TODO: wenn ich in dieser Klasse versuche auf die config zuzugreifen, bekomme ich immer "null"
     @Autowired
     Config config;
 
@@ -44,6 +45,7 @@ public class Utils {
 
     private X509Certificate loadCertificate() throws CertificateException {
         try {
+            //TODO: Zertifakte sollten über config geladen werden (Problem siehe oben)
             File file = ResourceUtils.getFile("classpath:Admin@deoni.de-cert.pem");
             byte[] encodedCert = Files.readAllBytes(file.toPath());
             ByteArrayInputStream inputStream = new ByteArrayInputStream(encodedCert);
@@ -119,7 +121,7 @@ public class Utils {
                         .setTransient(pArgs)
                         .submit(args);
             }
-            ret = Arrays.toString(result);
+            ret = new String(result, StandardCharsets.UTF_8);
 
         } catch (IOException | TimeoutException | ContractException | InterruptedException e) {
             e.printStackTrace();
@@ -142,7 +144,6 @@ public class Utils {
             }
             System.out.println(new String(result, StandardCharsets.UTF_8));
             ret = new String(result, StandardCharsets.UTF_8);
-            //ret = Arrays.toString(result);
 
         } catch (IOException | ContractException e) {
             e.printStackTrace();

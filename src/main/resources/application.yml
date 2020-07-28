@@ -5,8 +5,10 @@ company: DeoniMSP
 environment: test
 defaultNetwork: cheese
 networkConfigPath: connection.json
-privateKeyFile: Admin@deoni.de-cert.pem
-certFile: 0e490ff87805061de3df2582808389b0e7d348dc64def1b011c766cb55ba5d53_sk
+chaincodeName: nutrisafe-chaincode
+channelName: cheese
+certPath: Admin@deoni.de-cert.pem
+privateKeyPath: 0e490ff87805061de3df2582808389b0e7d348dc64def1b011c766cb55ba5d53_sk
 databaseConfig:
   username: postgres
   password: Blender123

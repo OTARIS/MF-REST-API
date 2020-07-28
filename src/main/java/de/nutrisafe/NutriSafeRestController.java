@@ -35,7 +35,11 @@ import static org.springframework.http.ResponseEntity.*;
 @DependsOn("jwtTokenProvider")
 public class NutriSafeRestController {
 
+
+
     private final Utils helper = new Utils();
+    @Autowired
+    private Config config;
     @Autowired
     AuthenticationManager authenticationManager;
     @Autowired
@@ -109,7 +113,7 @@ public class NutriSafeRestController {
                         pArgsByteMap.put(entry.getKey(), entry.getValue().getBytes());
                     }
                 }
-                String response = helper.submitTransaction(function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
+                String response = helper.submitTransaction(config, function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
                 JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
 
                 if (responseJson.get("status").toString().equals("\"200\"")){

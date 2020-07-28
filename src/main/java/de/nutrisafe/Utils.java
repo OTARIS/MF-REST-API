@@ -124,7 +124,8 @@ public class Utils {
         return ret;
     }
 
-    public String evaluateTransaction(final String function, final String[] args) throws Exception {
+    public String evaluateTransaction(Config config, final String function, final String[] args) throws Exception {
+        this.config = config;
         String ret = "";
         try {
             Contract contract = prepareTransaction();

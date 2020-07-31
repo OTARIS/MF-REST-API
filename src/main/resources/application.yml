@@ -11,6 +11,6 @@ certPath: Admin@deoni.de-cert.pem
 privateKeyPath: 0e490ff87805061de3df2582808389b0e7d348dc64def1b011c766cb55ba5d53_sk
 databaseConfig:
   username: postgres
-  password: Blender123
+  password: GRm%m5cgTmw3S&kjxV
   host: //localhost
   port: 5432

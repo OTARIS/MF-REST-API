@@ -37,7 +37,7 @@
   },
   "orderers": {
     "orderer.unibw.de": {
-      "url": "grpcs://192.168.178.162:7050",
+      "url": "grpcs://192.168.178.164:7050",
       "grpcOptions": {
         "ssl-target-name-override": "orderer.unibw.de",
         "hostnameOverride": "orderer.unibw.de"
@@ -49,7 +49,7 @@
   },
   "peers": {
     "peer0.deoni.de": {
-      "url": "grpcs://192.168.178.162:7051",
+      "url": "grpcs://192.168.178.164:7051",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.deoni.de",
         "hostnameOverride": "peer0.deoni.de"

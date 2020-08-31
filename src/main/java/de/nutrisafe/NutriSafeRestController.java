@@ -35,7 +35,11 @@ import static org.springframework.http.ResponseEntity.*;
 @DependsOn("jwtTokenProvider")
 public class NutriSafeRestController {
 
+
+
     private final Utils helper = new Utils();
+    @Autowired
+    private Config config;
     @Autowired
     AuthenticationManager authenticationManager;
     @Autowired
@@ -51,7 +55,7 @@ public class NutriSafeRestController {
             if(user == null)
                 throw new UsernameNotFoundException("Username not found");
             else {
-                String response = helper.evaluateTransaction(function, args);
+                String response = helper.evaluateTransaction(config, function, args);
                 JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
                 if (responseJson.get("status").toString().equals("\"200\"")){
                     return ok(responseJson.get("response").toString());
@@ -71,7 +75,7 @@ public class NutriSafeRestController {
         try {
             JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
             String[] args = {bodyJson.toString()};
-            String response = helper.evaluateTransaction("queryChaincodeByQueryString", args);
+            String response = helper.evaluateTransaction(config,"queryChaincodeByQueryString", args);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
             return ok(responseJson.get("response").toString());
         }
@@ -109,7 +113,7 @@ public class NutriSafeRestController {
                         pArgsByteMap.put(entry.getKey(), entry.getValue().getBytes());
                     }
                 }
-                String response = helper.submitTransaction(function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
+                String response = helper.submitTransaction(config, function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
                 JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
 
                 if (responseJson.get("status").toString().equals("\"200\"")){

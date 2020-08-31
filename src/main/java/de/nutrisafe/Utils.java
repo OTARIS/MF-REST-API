@@ -28,16 +28,11 @@ import java.util.concurrent.TimeoutException;
 
 public class Utils {
 
-    //TODO: wenn ich in dieser Klasse versuche auf die config zuzugreifen, bekomme ich immer "null"
-    @Autowired
     Config config;
 
     public Wallet loadWallet() throws IOException, CertificateException {
-
         Wallet wallet = Wallets.newInMemoryWallet();
-        //wallet.put(config.getCompany(), Wallet.Identity.createIdentity(config.getCompany(),
-        //        Objects.requireNonNull(loadCertificate()).toString(), loadPrivateKey()));
-        wallet.put("DeoniAdmin", Identities.newX509Identity("DeoniMSP", loadCertificate(), loadPrivateKey()));
+        wallet.put(config.getCompany(), Identities.newX509Identity(config.getCompany(), loadCertificate(), loadPrivateKey()));
         return wallet;
     }
 
@@ -46,7 +41,7 @@ public class Utils {
     private X509Certificate loadCertificate() throws CertificateException {
         try {
             //TODO: Zertifakte sollten über config geladen werden (Problem siehe oben)
-            File file = ResourceUtils.getFile("classpath:Admin@deoni.de-cert.pem");
+            File file = ResourceUtils.getFile("classpath:" + config.getCertPath());
             byte[] encodedCert = Files.readAllBytes(file.toPath());
             ByteArrayInputStream inputStream = new ByteArrayInputStream(encodedCert);
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
@@ -60,7 +55,7 @@ public class Utils {
 
     public PrivateKey loadPrivateKey() {
         try {
-            File file = ResourceUtils.getFile("classpath:0e490ff87805061de3df2582808389b0e7d348dc64def1b011c766cb55ba5d53_sk");
+            File file = ResourceUtils.getFile("classpath:" + config.getPrivateKeyPath());
             String privateKeyPEM = new String(Files.readAllBytes(file.toPath()));
             privateKeyPEM = privateKeyPEM.replaceAll("\\n|-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----", "");
             byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
@@ -85,17 +80,17 @@ public class Utils {
              * Preparing a builder for our Gateway.
              * .discovery(): Service discovery for all transaction submissions is enabled.
             */
-            Path networkConfigFile = ResourceUtils.getFile("classpath:connection.json").toPath();
+            Path networkConfigFile = ResourceUtils.getFile("classpath:" + config.getNetworkConfigPath()).toPath();
             Gateway.Builder builder = Gateway.createBuilder()
-                    .identity(loadWallet(), "DeoniAdmin")
+                    .identity(loadWallet(), config.getCompany())
                     .networkConfig(networkConfigFile);
                     //.discovery(true);
 
             final Gateway gateway = builder.connect();
 
-            final Network network = gateway.getNetwork("cheese");
+            final Network network = gateway.getNetwork(config.getChannelName());
 
-            contract = network.getContract("nutrisafe-chaincode");
+            contract = network.getContract(config.getChaincodeName());
 
         } catch (IOException | CertificateException e) {
             System.err.println("Could not prepare the transaction.");
@@ -104,10 +99,9 @@ public class Utils {
         return contract;
     }
 
-    public String submitTransaction(final String function, String[] args, HashMap<String, byte[]> pArgs) {
+    public String submitTransaction(Config config, final String function, String[] args, HashMap<String, byte[]> pArgs) {
+        this.config = config;
         String ret = "";
-        System.out.println("Function:" + function);
-        System.out.println("Args: "+ args);
         try {
             Contract contract = prepareTransaction();
             if(contract == null) throw new IOException();
@@ -130,7 +124,8 @@ public class Utils {
         return ret;
     }
 
-    public String evaluateTransaction(final String function, final String[] args) throws Exception {
+    public String evaluateTransaction(Config config, final String function, final String[] args) throws Exception {
+        this.config = config;
         String ret = "";
         try {
             Contract contract = prepareTransaction();

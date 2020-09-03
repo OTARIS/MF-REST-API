@@ -5,6 +5,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+
 public class FunctionRightConfigurer extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
 
     private final FunctionRightProvider functionRightProvider;
@@ -16,7 +17,7 @@ public class FunctionRightConfigurer extends SecurityConfigurerAdapter<DefaultSe
     @Override
     public void configure(HttpSecurity http) {
         FunctionRightFilter customFilter = new FunctionRightFilter(functionRightProvider);
-        http.addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(customFilter, UsernamePasswordAuthenticationFilter.class);
     }
 
 }

@@ -20,10 +20,11 @@ public class FunctionRightFilter extends GenericFilterBean {
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain filterChain)
             throws IOException, ServletException {
-        if (!functionRightProvider.validateFunction(req)) {
+        if (((HttpServletResponse) res).getHeader("Reason") == null && !functionRightProvider.validateFunction(req)) {
             ((HttpServletResponse) res).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        }
-        filterChain.doFilter(req, res);
+            ((HttpServletResponse) res).setHeader("Reason", "Function not allowed!");
+        } else
+            filterChain.doFilter(req, res);
     }
 
 }

@@ -91,6 +91,7 @@ public class UserDatabaseConfig {
         UserDetailsManager userDetailsManager = userDetailsManager();
         if(!userDetailsManager.userExists("nutriuser")) {
             List<GrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority(ROLE_USER));
             authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
             UserDetails user = new org.springframework.security.core.userdetails.User("nutriuser",
                     new BCryptPasswordEncoder().encode("12345"), authorities);
@@ -112,6 +113,8 @@ public class UserDatabaseConfig {
         }
         if(!userDetailsManager.userExists("admin")) {
             List<GrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority(ROLE_USER));
+            authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
             authorities.add(new SimpleGrantedAuthority(ROLE_ADMIN));
             UserDetails user = new org.springframework.security.core.userdetails.User("admin",
                     new BCryptPasswordEncoder().encode("12345"), authorities);

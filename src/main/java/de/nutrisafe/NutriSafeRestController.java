@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.RowCountCallbackHandler;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -107,18 +108,13 @@ public class NutriSafeRestController {
                 throw new UsernameNotFoundException("Username not found");
             else {
                 JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
-                switch(function) {
-                    case "addUser":
-                        return addUser(bodyJson);
-                    case "addWhitelist":
-                        // TODO: whitelist hinzufügen
-                        return badRequest().build();
-                    case "addFunctionToWhitelist":
-                        // TODO: funktion zu einer liste zuordnen
-                        return badRequest().build();
-                    default:
-                        return hyperledgerSubmit(function, bodyJson);
-                }
+                return switch (function) {
+                    case "addUser" -> addUser(bodyJson);
+                    case "addFunctionToWhitelist" -> addFunctionToWhitelist(bodyJson);
+                    case "removeFunctionFromWhitelist" -> removeFunctionFromWhitelist(bodyJson);
+                    case "deleteUser" -> deleteUser(bodyJson);
+                    default -> hyperledgerSubmit(function, bodyJson);
+                };
             }
         } catch (Exception e) {
             System.err.println(e.getMessage());
@@ -194,6 +190,88 @@ public class NutriSafeRestController {
         }
     }
 
+    private ResponseEntity<?> removeFunctionFromWhitelist(JsonObject bodyJson) {
+        String whitelist;
+        String function;
+        boolean whitelistDeleted;
+        if (bodyJson.has("whitelist")) {
+            whitelist = bodyJson.get("whitelist").toString().replace("\"","");
+        } else
+            return badRequest().body("Whitelist entry missing in JSON.");
+        if (bodyJson.has("function")) {
+            function = bodyJson.get("function").toString().replace("\"","");
+        } else
+            return badRequest().body("Function entry missing in JSON.");
+        if(!whitelistExists(whitelist))
+            return badRequest().body("Whitelist does not exist.");
+        PreparedStatementCreator functionDeleteStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("delete from function where name = ? and whitelist = ?");
+            preparedStatement.setString(1, function);
+            preparedStatement.setString(2, whitelist);
+            return preparedStatement;
+        };
+        jdbcTemplate.update(functionDeleteStatement);
+        if(!hasWhitelistAnyFunctions(whitelist) && !hasWhitelistAnyUsers(whitelist)) {
+            PreparedStatementCreator whitelistDeleteStatement = connection -> {
+                PreparedStatement preparedStatement = connection.prepareStatement("delete from whitelist where name = ? and whitelist = ?");
+                preparedStatement.setString(1, function);
+                preparedStatement.setString(2, whitelist);
+                return preparedStatement;
+            };
+            jdbcTemplate.update(whitelistDeleteStatement);
+            return ok(function + " successfully removed and unused " + whitelist + " deleted");
+        } else
+            return ok(function + " successfully removed from " + whitelist);
+    }
+
+    private ResponseEntity<?> addFunctionToWhitelist(JsonObject bodyJson) {
+        String whitelist;
+        String function;
+        boolean whitelistExisted;
+        if (bodyJson.has("whitelist")) {
+            whitelist = bodyJson.get("whitelist").toString().replace("\"","");
+        } else
+            return badRequest().body("Whitelist entry missing in JSON.");
+        if (bodyJson.has("function")) {
+            function = bodyJson.get("function").toString().replace("\"","");
+        } else
+            return badRequest().body("Function entry missing in JSON.");
+        if(functionToWhitelistEntryExists(function, whitelist))
+            return ok().body("Entry already registered. No new entry created.");
+        whitelistExisted = whitelistExists(whitelist);
+        if(!whitelistExisted) {
+            PreparedStatementCreator whitelistInsertStatement = connection -> {
+                PreparedStatement preparedStatement = connection.prepareStatement("insert into whitelist(name) values (?)");
+                preparedStatement.setString(1, whitelist);
+                return preparedStatement;
+            };
+            jdbcTemplate.update(whitelistInsertStatement);
+        }
+        return whitelistExisted ? ok(function + " added to " + whitelist) : ok(whitelist + " created and " + function + " added");
+    }
+
+    private ResponseEntity<?> deleteUser(JsonObject bodyJson) {
+        String username;
+        if (bodyJson.has("username")) {
+            username = bodyJson.get("username").toString().replace("\"","");
+        } else if (bodyJson.has("user")) {
+            username = bodyJson.get("user").toString().replace("\"","");
+        } else if (bodyJson.has("name")) {
+            username = bodyJson.get("name").toString().replace("\"","");
+        } else
+            return badRequest().body("Username required");
+        if(!userDetailsManager.userExists(username))
+            return ok().body("User does not exist.");
+        PreparedStatementCreator userToWhitelistDeleteStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where username = ?");
+            preparedStatement.setString(1, username);
+            return preparedStatement;
+        };
+        jdbcTemplate.update(userToWhitelistDeleteStatement);
+        userDetailsManager.deleteUser(username);
+        return ok().body("User successfully deleted.");
+    }
+
     private ResponseEntity<?> addUser(JsonObject bodyJson) {
         // retrieve username from json
         String username;
@@ -264,5 +342,50 @@ public class NutriSafeRestController {
         }
 
         return ok(username + " successfully created");
+    }
+
+    private boolean whitelistExists(String whitelist) {
+        RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
+        PreparedStatementCreator whitelistSelectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select * from whitelist where name = ?");
+            preparedStatement.setString(1, whitelist);
+            return preparedStatement;
+        };
+        jdbcTemplate.query(whitelistSelectStatement, countCallback);
+        return countCallback.getRowCount() > 0;
+    }
+
+    private boolean functionToWhitelistEntryExists(String function, String whitelist) {
+        RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
+        PreparedStatementCreator functionToWhitelistSelectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select * from function where name = ? and whitelist = ?");
+            preparedStatement.setString(1, function);
+            preparedStatement.setString(2, whitelist);
+            return preparedStatement;
+        };
+        jdbcTemplate.query(functionToWhitelistSelectStatement, countCallback);
+        return countCallback.getRowCount() > 0;
+    }
+
+    private boolean hasWhitelistAnyFunctions(String whitelist) {
+        RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
+        PreparedStatementCreator functionToWhitelistSelectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select * from function where whitelist = ?");
+            preparedStatement.setString(1, whitelist);
+            return preparedStatement;
+        };
+        jdbcTemplate.query(functionToWhitelistSelectStatement, countCallback);
+        return countCallback.getRowCount() > 0;
+    }
+
+    private boolean hasWhitelistAnyUsers(String whitelist) {
+        RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
+        PreparedStatementCreator userToWhitelistSelectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select * from user_to_whitelist where whitelist = ?");
+            preparedStatement.setString(1, whitelist);
+            return preparedStatement;
+        };
+        jdbcTemplate.query(userToWhitelistSelectStatement, countCallback);
+        return countCallback.getRowCount() > 0;
     }
 }

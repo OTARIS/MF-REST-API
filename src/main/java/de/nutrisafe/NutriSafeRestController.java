@@ -1,6 +1,5 @@
 package de.nutrisafe;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -18,11 +17,9 @@ import org.springframework.jdbc.core.RowCountCallbackHandler;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -32,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
@@ -45,8 +41,6 @@ import static org.springframework.http.ResponseEntity.*;
 @RestController
 @DependsOn("jwtTokenProvider")
 public class NutriSafeRestController {
-
-
 
     private final Utils helper = new Utils();
     @Autowired
@@ -64,7 +58,6 @@ public class NutriSafeRestController {
 
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> get(@RequestParam String function, @RequestParam(required = false) String[] args) {
-
         try {
             User user = persistenceManager.getCurrentUser();
             if(user == null)
@@ -74,8 +67,7 @@ public class NutriSafeRestController {
                 JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
                 if (responseJson.get("status").toString().equals("\"200\"")){
                     return ok(responseJson.get("response").toString());
-                }
-                else {
+                } else {
                     return badRequest().body(responseJson.get("response").toString());
                 }
             }
@@ -93,11 +85,10 @@ public class NutriSafeRestController {
             String response = helper.evaluateTransaction(config,"queryChaincodeByQueryString", args);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
             return ok(responseJson.get("response").toString());
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
-        catch (Exception e){
-                System.err.println(e.getMessage());
-                return ResponseEntity.badRequest().build();
-            }
     }
 
     @PostMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -165,7 +156,7 @@ public class NutriSafeRestController {
             }
             //private attributes
             HashMap<String, byte[]> pArgsByteMap = new HashMap<>();
-            if (bodyJson.has("pArgs")){
+            if (bodyJson.has("pArgs")) {
                 String pArgs = bodyJson.getAsJsonObject("pArgs").toString();
                 HashMap<String, String> pArgsMap = new Gson().fromJson(pArgs, new TypeToken<HashMap<String, String>>() {}.getType());
                 for (Map.Entry<String, String> entry : pArgsMap.entrySet()) {
@@ -193,7 +184,6 @@ public class NutriSafeRestController {
     private ResponseEntity<?> removeFunctionFromWhitelist(JsonObject bodyJson) {
         String whitelist;
         String function;
-        boolean whitelistDeleted;
         if (bodyJson.has("whitelist")) {
             whitelist = bodyJson.get("whitelist").toString().replace("\"","");
         } else
@@ -211,7 +201,12 @@ public class NutriSafeRestController {
             return preparedStatement;
         };
         jdbcTemplate.update(functionDeleteStatement);
-        if(!hasWhitelistAnyFunctions(whitelist) && !hasWhitelistAnyUsers(whitelist)) {
+        if(hasWhitelistAnyFunctions(whitelist) || hasWhitelistAnyUsers(whitelist)
+                || whitelist.equalsIgnoreCase(DEFAULT_READ_WHITELIST)
+                || whitelist.equalsIgnoreCase(DEFAULT_WRITE_WHITELIST)
+                || whitelist.equalsIgnoreCase(DEFAULT_ADMIN_WHITELIST))
+            return ok(function + " successfully removed from " + whitelist);
+        else {
             PreparedStatementCreator whitelistDeleteStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement("delete from whitelist where name = ? and whitelist = ?");
                 preparedStatement.setString(1, function);
@@ -220,8 +215,7 @@ public class NutriSafeRestController {
             };
             jdbcTemplate.update(whitelistDeleteStatement);
             return ok(function + " successfully removed and unused " + whitelist + " deleted");
-        } else
-            return ok(function + " successfully removed from " + whitelist);
+        }
     }
 
     private ResponseEntity<?> addFunctionToWhitelist(JsonObject bodyJson) {
@@ -269,6 +263,13 @@ public class NutriSafeRestController {
         };
         jdbcTemplate.update(userToWhitelistDeleteStatement);
         userDetailsManager.deleteUser(username);
+        /*
+        if(!(hasWhitelistAnyFunctions(whitelist) || hasWhitelistAnyUsers(whitelist)
+                || whitelist.equalsIgnoreCase(DEFAULT_READ_WHITELIST)
+                || whitelist.equalsIgnoreCase(DEFAULT_WRITE_WHITELIST)
+                || whitelist.equalsIgnoreCase(DEFAULT_ADMIN_WHITELIST))) {
+
+        }*/
         return ok().body("User successfully deleted.");
     }
 
@@ -310,37 +311,58 @@ public class NutriSafeRestController {
                 return badRequest().body("Invalid role name! Choose either ROLE_USER, ROLE_MEMBER, or ROLE_ADMIN.");
         }
 
+        // retrieve optional whitelist from json
+        String whitelist = null;
+        if (bodyJson.has("whitelist")) {
+            whitelist = bodyJson.get("whitelist").toString().replace("\"", "");
+            if(!whitelistExists(whitelist))
+                return badRequest().body("Whitelist " + whitelist + " does not exist!");
+        }
+
+        // create user
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(username,
                 new BCryptPasswordEncoder().encode(password), authorities);
         userDetailsManager.createUser(userDetails);
 
-        switch (roleState) {
-            case 2:
-                PreparedStatementCreator whitelistInsertStatement = connection -> {
-                    PreparedStatement preparedStatement = connection.prepareStatement("insert into user_to_whitelist(username, whitelist) values (?, '"
-                            + DEFAULT_ADMIN_WHITELIST + "')");
-                    preparedStatement.setString(1, username);
-                    return preparedStatement;
-                };
-                jdbcTemplate.update(whitelistInsertStatement);
-            case 1:
-                whitelistInsertStatement = connection -> {
-                    PreparedStatement preparedStatement = connection.prepareStatement("insert into user_to_whitelist(username, whitelist) values (?, '"
-                            + DEFAULT_WRITE_WHITELIST + "')");
-                    preparedStatement.setString(1, username);
-                    return preparedStatement;
-                };
-                jdbcTemplate.update(whitelistInsertStatement);
-            default:
-                whitelistInsertStatement = connection -> {
-                    PreparedStatement preparedStatement = connection.prepareStatement("insert into user_to_whitelist(username, whitelist) values (?, '"
-                            + DEFAULT_READ_WHITELIST + "')");
-                    preparedStatement.setString(1, username);
-                    return preparedStatement;
-                };
-                jdbcTemplate.update(whitelistInsertStatement);
+        // map to whitelist(s)
+        PreparedStatementCreator whitelistInsertStatement;
+        if(whitelist != null) {
+            final String whitelistParam = whitelist;
+            whitelistInsertStatement = connection -> {
+                PreparedStatement preparedStatement = connection.prepareStatement("insert into user_to_whitelist(username, whitelist) values (?, ?)");
+                preparedStatement.setString(1, username);
+                preparedStatement.setString(2, whitelistParam);
+                return preparedStatement;
+            };
+            jdbcTemplate.update(whitelistInsertStatement);
+        } else {
+            switch (roleState) {
+                case 2:
+                    whitelistInsertStatement = connection -> {
+                        PreparedStatement preparedStatement = connection.prepareStatement("insert into user_to_whitelist(username, whitelist) values (?, '"
+                                + DEFAULT_ADMIN_WHITELIST + "')");
+                        preparedStatement.setString(1, username);
+                        return preparedStatement;
+                    };
+                    jdbcTemplate.update(whitelistInsertStatement);
+                case 1:
+                    whitelistInsertStatement = connection -> {
+                        PreparedStatement preparedStatement = connection.prepareStatement("insert into user_to_whitelist(username, whitelist) values (?, '"
+                                + DEFAULT_WRITE_WHITELIST + "')");
+                        preparedStatement.setString(1, username);
+                        return preparedStatement;
+                    };
+                    jdbcTemplate.update(whitelistInsertStatement);
+                default:
+                    whitelistInsertStatement = connection -> {
+                        PreparedStatement preparedStatement = connection.prepareStatement("insert into user_to_whitelist(username, whitelist) values (?, '"
+                                + DEFAULT_READ_WHITELIST + "')");
+                        preparedStatement.setString(1, username);
+                        return preparedStatement;
+                    };
+                    jdbcTemplate.update(whitelistInsertStatement);
+            }
         }
-
         return ok(username + " successfully created");
     }
 

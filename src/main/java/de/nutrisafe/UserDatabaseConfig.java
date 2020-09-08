@@ -59,6 +59,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('privateObjectExists', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('readObject', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('readAccept', '" + DEFAULT_READ_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('META_readMetaDef', '" + DEFAULT_READ_WHITELIST + "')");
             System.out.println("done!");
         }
         if(!whitelistExists(DEFAULT_WRITE_WHITELIST, jdbcTemplate)) {
@@ -81,7 +82,6 @@ public class UserDatabaseConfig {
             System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default admin whitelist found: Creating new list...");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_createSampleData', '" + DEFAULT_ADMIN_WHITELIST + "')");
-            jdbcTemplate.execute("insert into function(name, whitelist) values ('META_readMetaDef', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_addAttributeDefinition', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_addProductDefinition', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('addUser', '" + DEFAULT_ADMIN_WHITELIST + "')");

@@ -72,6 +72,7 @@ public class NutriSafeRestController {
             if(user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             return switch(function) {
+                case "getAllUsers" -> getAllUsers();
                 case "getUserInfo" -> getUserInfo(user.getName());
                 case "getUserInfoOfUser" -> getUserInfo(args);
                 case "getWhitelists" -> getWhitelists();
@@ -215,6 +216,15 @@ public class NutriSafeRestController {
             return badRequest().body("REST API was unable to parse the key defs file for possible functions. " +
                     "Please contact the administrator.");
         }
+    }
+
+    private ResponseEntity<?> getAllUsers() {
+        JsonObject response = new JsonObject();
+        JsonArray usernames = new JsonArray();
+        for(String username : selectAllUsers())
+            usernames.add(username);
+        response.add("usernames", usernames);
+        return ok(response.toString());
     }
 
     private ResponseEntity<?> getUserInfo(String[] args) throws RequiredException {
@@ -406,6 +416,15 @@ public class NutriSafeRestController {
     }
 
     /* Database helper functions */
+
+    private List<String> selectAllUsers() {
+        PreparedStatementCreator selectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select username from users");
+            return preparedStatement;
+        };
+        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
+        return whitelists;
+    }
 
     private List<String> selectUserToWhitelistEntriesOfUser(final String username) {
         PreparedStatementCreator selectStatement = connection -> {

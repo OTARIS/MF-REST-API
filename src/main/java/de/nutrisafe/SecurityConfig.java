@@ -42,6 +42,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests(authorize -> authorize
                 .antMatchers("/auth").permitAll()
                 .antMatchers("/get").hasAuthority("ROLE_USER")
+                .antMatchers("/select").hasAuthority("ROLE_USER")
                 .antMatchers("/submit").hasAuthority("ROLE_MEMBER")
         ).formLogin().disable().csrf().disable().apply(new JwtConfigurer(jwtTokenProvider))
                 .and().apply(new FunctionRightConfigurer(functionRightProvider));

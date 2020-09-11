@@ -140,7 +140,7 @@ public class NutriSafeRestController {
             String username = retrieveUsername(jsonObject, true,true);
             String password = retrievePassword(jsonObject, true);
             // bruteforce protection
-            if(lastTry.get(username) + 10000 < System.currentTimeMillis()
+            if(lastTry.get(username) != null && lastTry.get(username) + 10000 < System.currentTimeMillis()
                     && triesCount.get(username) > 2)
                 return badRequest().body("Suspicious behavior detected. Please wait 10 seconds before trying again.");
             try {
@@ -157,6 +157,7 @@ public class NutriSafeRestController {
                     triesCount.put(username, triesCount.get(username));
                 else
                     triesCount.put(username, 0);
+                lastTry.put(username, System.currentTimeMillis());
                 return badRequest().body("Wrong password.");
             }
         } catch(RequiredException | InvalidException e) {
@@ -231,7 +232,7 @@ public class NutriSafeRestController {
                 functions.add(function);
             response.add(whitelist, functions);
         }
-        return ok(response);
+        return ok(response.toString());
     }
 
     private ResponseEntity<?> getUserInfo(String username) {
@@ -249,7 +250,7 @@ public class NutriSafeRestController {
         for(String function : allowedFunctionSet)
             allowedFunctions.add(function);
         response.add("allowedFunctions", allowedFunctions);
-        return ok(response);
+        return ok(response.toString());
     }
 
     private ResponseEntity<?> unlinkFunctionFromWhitelist(JsonObject bodyJson) throws InvalidException {
@@ -633,7 +634,7 @@ public class NutriSafeRestController {
     private class SimpleStringRowMapper implements RowMapper<String> {
         @Override
         public String mapRow(ResultSet resultSet, int i) throws SQLException {
-            return resultSet.getString(i);
+            return resultSet.getString(1);
         }
     }
 

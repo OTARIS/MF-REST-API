@@ -1,6 +1,7 @@
 package de.nutrisafe;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowCountCallbackHandler;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,11 +30,15 @@ import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.json.Json;
+import javax.persistence.criteria.CriteriaBuilder;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 import static de.nutrisafe.UserDatabaseConfig.*;
@@ -44,6 +50,8 @@ import static org.springframework.http.ResponseEntity.*;
 public class NutriSafeRestController {
 
     private final Utils helper = new Utils();
+    private final HashMap<String, Integer> triesCount = new HashMap<>();
+    private final HashMap<String, Long> lastTry = new HashMap<>();
     @Autowired
     private Config config;
     @Autowired
@@ -62,33 +70,37 @@ public class NutriSafeRestController {
         try {
             User user = persistenceManager.getCurrentUser();
             if(user == null)
-                throw new UsernameNotFoundException("Username not found");
-            else {
-                String response = helper.evaluateTransaction(config, function, args);
-                JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
-                if (responseJson.get("status").toString().equals("\"200\"")){
-                    return ok(responseJson.get("response").toString());
-                } else {
-                    return badRequest().body(responseJson.get("response").toString());
-                }
-            }
+                throw new UsernameNotFoundException("No valid session. Please authenticate again.");
+            return switch(function) {
+                case "getUserInfo" -> getUserInfo(user.getName());
+                case "getUserInfoOfUser" -> getUserInfo(args);
+                case "getWhitelists" -> getWhitelists();
+                default -> hyperledgerGet(function, args);
+            };
+        } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
+            return badRequest().body(e.getMessage());
         } catch (Exception e) {
-            System.err.println(e.getMessage());
-            return ResponseEntity.badRequest().build();
+            e.printStackTrace();
+            return badRequest().build();
         }
     }
 
     @PostMapping(value = "/select", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> select(@RequestBody String body) {
         try {
+            User user = persistenceManager.getCurrentUser();
+            if(user == null)
+                throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
             String[] args = {bodyJson.toString()};
             String response = helper.evaluateTransaction(config,"queryChaincodeByQueryString", args);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
             return ok(responseJson.get("response").toString());
+        } catch (UsernameNotFoundException e) {
+            return badRequest().body(e.getMessage());
         } catch (Exception e) {
-            System.err.println(e.getMessage());
-            return ResponseEntity.badRequest().build();
+            e.printStackTrace();
+            return badRequest().build();
         }
     }
 
@@ -97,57 +109,71 @@ public class NutriSafeRestController {
         try {
             User user = persistenceManager.getCurrentUser();
             if(user == null)
-                throw new UsernameNotFoundException("Username not found");
+                throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             else {
                 JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
-                try {
-                    return switch (function) {
-                        case "createUser" -> createUser(bodyJson);
-                        case "deleteUser" -> deleteUser(bodyJson);
-                        case "createWhitelist" -> createWhitelist(bodyJson);
-                        case "deleteWhitelist" -> deleteWhitelist(bodyJson);
-                        case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
-                        case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
-                        case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
-                        case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
-                        default -> hyperledgerSubmit(function, bodyJson);
-                    };
-                } catch (RequiredException | InvalidException e) {
-                    return badRequest().body(e.getMessage());
-                }
+                return switch (function) {
+                    case "createUser" -> createUser(bodyJson);
+                    case "deleteUser" -> deleteUser(bodyJson);
+                    case "setRole" -> setRole(bodyJson);
+                    case "createWhitelist" -> createWhitelist(bodyJson);
+                    case "deleteWhitelist" -> deleteWhitelist(bodyJson);
+                    case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
+                    case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
+                    case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
+                    case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
+                    default -> hyperledgerSubmit(function, bodyJson);
+                };
             }
+        } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
+            return badRequest().body(e.getMessage());
         } catch (Exception e) {
-            System.err.println(e.getMessage());
-            return ResponseEntity.badRequest().build();
+            e.printStackTrace();
+            return badRequest().build();
         }
     }
 
     @PostMapping(value = "/auth", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> auth(@RequestBody String body) {
-        String username;
-        String password;
         try {
             JsonObject jsonObject = JsonParser.parseString(body).getAsJsonObject();
-            username = jsonObject.get("username").getAsString();
-            password = jsonObject.get("password").getAsString();
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
-        try {
-            PersistenceManager userDb = persistenceManager;
-            if(userDb.userExists(username)) {
+            String username = retrieveUsername(jsonObject, true,true);
+            String password = retrievePassword(jsonObject, true);
+            // bruteforce protection
+            if(lastTry.get(username) + 10000 < System.currentTimeMillis()
+                    && triesCount.get(username) > 2)
+                return badRequest().body("Suspicious behavior detected. Please wait 10 seconds before trying again.");
+            try {
+                PersistenceManager userDb = persistenceManager;
                 authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
                 String token = jwtTokenProvider.createToken(username, userDb.getAuthorities(username));
                 Map<Object, Object> model = new HashMap<>();
                 model.put("username", username);
                 model.put("token", token);
                 return ok(model);
-            } else throw new UsernameNotFoundException("Username " + username + " not found");
-        } catch (AuthenticationException e) {
-            System.err.println(e.getMessage() + " - Invalid username/password supplied.");
-            throw new BadCredentialsException("Invalid username/password supplied");
+            } catch (AuthenticationException e) {
+                // bruteforce protection: count unsuccessful attempts if they happen in less than 10 seconds
+                if (lastTry.get(username) + 10000 < System.currentTimeMillis())
+                    triesCount.put(username, triesCount.get(username));
+                else
+                    triesCount.put(username, 0);
+                return badRequest().body("Wrong password.");
+            }
+        } catch(RequiredException | InvalidException e) {
+            return badRequest().body(e.getMessage());
+        } catch(Exception e) {
+            e.printStackTrace();
+            return badRequest().build();
         }
+    }
+
+    private ResponseEntity<?> hyperledgerGet(String function, String[] args) throws Exception {
+        String response = helper.evaluateTransaction(config, function, args);
+        JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
+        if (responseJson.get("status").toString().equals("\"200\""))
+            return ok(responseJson.get("response").toString());
+        else
+            return badRequest().body(responseJson.get("response").toString());
     }
 
     private ResponseEntity<?> hyperledgerSubmit(String function, JsonObject bodyJson) {
@@ -188,6 +214,42 @@ public class NutriSafeRestController {
             return badRequest().body("REST API was unable to parse the key defs file for possible functions. " +
                     "Please contact the administrator.");
         }
+    }
+
+    private ResponseEntity<?> getUserInfo(String[] args) throws RequiredException {
+        if (args.length < 1)
+            throw new RequiredException("Username required.");
+        else
+            return getUserInfo(args[0]);
+    }
+
+    private ResponseEntity<?> getWhitelists() {
+        JsonObject response = new JsonObject();
+        for(String whitelist : selectAllWhitelists()) {
+            JsonArray functions = new JsonArray();
+            for(String function : selectFunctionToWhitelistEntriesOfWhitelist(whitelist))
+                functions.add(function);
+            response.add(whitelist, functions);
+        }
+        return ok(response);
+    }
+
+    private ResponseEntity<?> getUserInfo(String username) {
+        JsonObject response = new JsonObject();
+        response.addProperty("username", username);
+        response.addProperty("role", getRole(username));
+        JsonArray linkedToWhitelists = new JsonArray();
+        Set<String> allowedFunctionSet = new HashSet<>();
+        for(String whitelist : selectUserToWhitelistEntriesOfUser(username)) {
+            linkedToWhitelists.add(whitelist);
+            allowedFunctionSet.addAll(selectFunctionToWhitelistEntriesOfWhitelist(whitelist));
+        }
+        response.add("linkedToWhitelists", linkedToWhitelists);
+        JsonArray allowedFunctions = new JsonArray();
+        for(String function : allowedFunctionSet)
+            allowedFunctions.add(function);
+        response.add("allowedFunctions", allowedFunctions);
+        return ok(response);
     }
 
     private ResponseEntity<?> unlinkFunctionFromWhitelist(JsonObject bodyJson) throws InvalidException {
@@ -292,7 +354,86 @@ public class NutriSafeRestController {
         }
     }
 
+    private ResponseEntity<?> setRole(JsonObject bodyJson) throws InvalidException {
+        String username = retrieveUsername(bodyJson, true, true);
+        String newRole = retrieveRole(bodyJson, true);
+        String oldRole = getRole(username);
+        if(oldRole.equals(newRole))
+            throw new InvalidException(newRole + " is already set for " + username + ".");
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        switch (newRole) {
+            case ROLE_ADMIN:
+                authorities.add(new SimpleGrantedAuthority(ROLE_ADMIN));
+            case ROLE_MEMBER:
+                authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
+            default:
+                authorities.add(new SimpleGrantedAuthority(ROLE_USER));
+        }
+        UserDetails user = userDetailsManager.loadUserByUsername(username);
+        userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(username,
+                user.getPassword(), authorities));
+        boolean readOnly = true;
+        switch (newRole) {
+            case ROLE_ADMIN:
+                if(!userToWhitelistExists(username, DEFAULT_ADMIN_WHITELIST))
+                    insertUserToWhitelistEntry(username, DEFAULT_ADMIN_WHITELIST);
+            case ROLE_MEMBER:
+                if(oldRole.equalsIgnoreCase(ROLE_USER) && !userToWhitelistExists(username, DEFAULT_WRITE_WHITELIST))
+                    insertUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
+                readOnly = false;
+            default:
+                if(oldRole.equalsIgnoreCase(ROLE_ADMIN) && userToWhitelistExists(username, DEFAULT_ADMIN_WHITELIST))
+                    deleteUserToWhitelistEntry(username, DEFAULT_ADMIN_WHITELIST);
+                if(readOnly && userToWhitelistExists(username, DEFAULT_WRITE_WHITELIST))
+                    deleteUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
+        }
+        return ok(newRole + " set for " + username);
+    }
+
+    private String getRole(String username) {
+        String role = ROLE_USER;
+        UserDetails user = userDetailsManager.loadUserByUsername(username);
+        for(GrantedAuthority authority : user.getAuthorities()) {
+            String tmp = authority.getAuthority();
+            if(tmp.equalsIgnoreCase(ROLE_ADMIN)) {
+                role = ROLE_ADMIN;
+                break;
+            } else if(tmp.equalsIgnoreCase(ROLE_MEMBER))
+                role = ROLE_MEMBER;
+        }
+        return role;
+    }
+
     /* Database helper functions */
+
+    private List<String> selectUserToWhitelistEntriesOfUser(final String username) {
+        PreparedStatementCreator selectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select whitelist from user_to_whitelist where username = ?");
+            preparedStatement.setString(1, username);
+            return preparedStatement;
+        };
+        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
+        return whitelists;
+    }
+
+    private List<String> selectFunctionToWhitelistEntriesOfWhitelist(final String whitelist) {
+        PreparedStatementCreator selectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select name from function where whitelist = ?");
+            preparedStatement.setString(1, whitelist);
+            return preparedStatement;
+        };
+        List<String> functions = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
+        return functions;
+    }
+
+    private List<String> selectAllWhitelists() {
+        PreparedStatementCreator selectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select name from whitelist");
+            return preparedStatement;
+        };
+        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
+        return whitelists;
+    }
 
     private void deleteWhitelistEntry(final String whitelist) {
         PreparedStatementCreator whitelistDeleteStatement = connection -> {
@@ -488,6 +629,13 @@ public class NutriSafeRestController {
     }
 
     /* End of database checks */
+
+    private class SimpleStringRowMapper implements RowMapper<String> {
+        @Override
+        public String mapRow(ResultSet resultSet, int i) throws SQLException {
+            return resultSet.getString(i);
+        }
+    }
 
     /* Custom Exceptions */
 

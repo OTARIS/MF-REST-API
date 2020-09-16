@@ -1,12 +1,15 @@
 {
   "1": "preIds",
   "2": "id",
-  "3": "receiver",
-  "4": "pdc",
-  "5": "attribute",
-  "6": "attrValue",
-  "7": "product",
-  "8": "attributes",
-  "9": "attrValues",
-  "10": "autoAccept"
+  "3": "amountDif",
+  "4": "receiver",
+  "5": "pdc",
+  "6": "attribute",
+  "7": "attrValue",
+  "8": "product",
+  "9": "amount",
+  "10": "unit",
+  "11": "attributes",
+  "12": "attrValues",
+  "13": "autoAccept"
 }

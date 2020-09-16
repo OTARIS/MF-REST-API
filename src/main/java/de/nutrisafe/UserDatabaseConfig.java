@@ -85,6 +85,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_createSampleData', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_addAttributeDefinition', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_addProductDefinition', '" + DEFAULT_ADMIN_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('META_addUnit', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('createUser', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteUser', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('setRole', '" + DEFAULT_ADMIN_WHITELIST + "')");

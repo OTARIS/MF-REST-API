@@ -45,6 +45,7 @@ import static de.nutrisafe.UserDatabaseConfig.*;
 import static org.springframework.http.ResponseEntity.*;
 
 @Lazy
+@CrossOrigin()
 @RestController
 @DependsOn("jwtTokenProvider")
 public class NutriSafeRestController {
@@ -189,9 +190,9 @@ public class NutriSafeRestController {
             HashMap<String, String> keyDefs  = new Gson().fromJson(keyDefsJson, new TypeToken<HashMap<String, String>>() {}.getType());
             ArrayList<String> attributesToPass = new ArrayList<>();
             //iterate over the allowed key definitions. If the request body contains this key, the value will be added to attributesToPass
-            for (Map.Entry<String, String> entry : keyDefs.entrySet()) {
-                if (bodyJson.has(entry.getValue())){
-                    attributesToPass.add(bodyJson.get(entry.getValue()).toString().replace("\"",""));
+            for (int i = 1; i < keyDefs.size(); i++){
+                if (bodyJson.has(keyDefs.get(String.valueOf(i)))){
+                    attributesToPass.add(bodyJson.get(keyDefs.get(String.valueOf(i))).toString().replace("\"",""));
                 }
             }
             //private attributes

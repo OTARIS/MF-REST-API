@@ -56,8 +56,9 @@ public class Utils {
     public PrivateKey loadPrivateKey() {
         try {
             File file = ResourceUtils.getFile("classpath:" + config.getPrivateKeyPath());
-            String privateKeyPEM = new String(Files.readAllBytes(file.toPath()));
-            privateKeyPEM = privateKeyPEM.replaceAll("\\n|-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----", "");
+            //String privateKeyPEM = new String(Files.readAllBytes(file.toPath()));
+            //privateKeyPEM = privateKeyPEM.replaceAll("\\n|-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----", "");
+            String privateKeyPEM ="MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgIWma6xI+9V4eSr8J6pF5QcqT+7ZF85/uGy5gO5ZzFA6hRANCAASm+0EOKrjW0h7pXhrWxY6QrpG/+BHDIpHQ1ujaOidLhbDhscqwkCoH1ojXvzkD1+nmb+1EphnthMtruZAbeJE2";
             byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
             KeyFactory kf = KeyFactory.getInstance("EC");
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);

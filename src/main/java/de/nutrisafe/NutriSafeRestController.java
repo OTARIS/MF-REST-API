@@ -50,8 +50,11 @@ import static org.springframework.http.ResponseEntity.*;
 public class NutriSafeRestController {
 
     private final Utils helper = new Utils();
+
+    // bruteforce protection attributes
     private final HashMap<String, Integer> triesCount = new HashMap<>();
     private final HashMap<String, Long> lastTry = new HashMap<>();
+
     @Autowired
     private Config config;
     @Autowired

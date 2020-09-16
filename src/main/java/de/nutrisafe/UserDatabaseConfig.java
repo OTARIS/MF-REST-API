@@ -53,7 +53,7 @@ public class UserDatabaseConfig {
 
         // check for existence of default whitelists
         if(!whitelistExists(DEFAULT_READ_WHITELIST, jdbcTemplate)) {
-            System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default read whitelist found: Creating new list...");
+            System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default read whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('objectExists', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('privateObjectExists', '" + DEFAULT_READ_WHITELIST + "')");
@@ -64,7 +64,7 @@ public class UserDatabaseConfig {
             System.out.println("done!");
         }
         if(!whitelistExists(DEFAULT_WRITE_WHITELIST, jdbcTemplate)) {
-            System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default write whitelist found: Creating new list...");
+            System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default write whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteObject', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deletePrivateObject', '" + DEFAULT_WRITE_WHITELIST + "')");
@@ -80,7 +80,7 @@ public class UserDatabaseConfig {
             System.out.println("done!");
         }
         if(!whitelistExists(DEFAULT_ADMIN_WHITELIST, jdbcTemplate)) {
-            System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default admin whitelist found: Creating new list...");
+            System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default admin whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_createSampleData', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_addAttributeDefinition', '" + DEFAULT_ADMIN_WHITELIST + "')");

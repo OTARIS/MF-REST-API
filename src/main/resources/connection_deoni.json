@@ -37,25 +37,25 @@
   },
   "orderers": {
     "orderer.unibw.de": {
-      "url": "grpcs://10.0.2.81:7050",
+      "url": "grpcs://192.168.56.101:7050",
       "grpcOptions": {
         "ssl-target-name-override": "orderer.unibw.de",
         "hostnameOverride": "orderer.unibw.de"
       },
       "tlsCACerts": {
-        "path": "classpath:ca_orderer.crt"
+        "path": "src\\main\\resources\\orderer_tlsca_cert.crt"
       }
     }
   },
   "peers": {
     "peer0.deoni.de": {
-      "url": "grpcs://10.0.2.81:7051",
+      "url": "grpcs://192.168.56.101:7051",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.deoni.de",
         "hostnameOverride": "peer0.deoni.de"
       },
       "tlsCACerts": {
-        "path": "classpath:ca_deoni.crt"
+        "path": "src\\main\\resources\\deoni_tlsca_cert.crt"
       }
     }
   }

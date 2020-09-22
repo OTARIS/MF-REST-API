@@ -1,16 +1,35 @@
 spring:
-  profiles: test
-name: test-YAML
+  profiles: deoni
+name: deoni-YAML
 company: DeoniMSP
-environment: test
+environment: deoni
 defaultNetwork: cheese
-networkConfigPath: connection.json
+networkConfigPath: connection_deoni.json
 chaincodeName: nutrisafe-chaincode
 channelName: cheese
-certPath: Admin@deoni.de-cert.pem
-privateKeyPath: 0e490ff87805061de3df2582808389b0e7d348dc64def1b011c766cb55ba5d53_sk
+certPath: deoni_admin_cert.pem
+privateKeyPath: deoni_private_key
 databaseConfig:
   username: postgres
-  password: GRm%m5cgTmw3S&kjxV
+  password: Blender123
+  host: //localhost
+  port: 5432
+
+---
+
+spring:
+  profiles: brangus
+name: brangus-YAML
+company: BrangusMSP
+environment: brangus
+defaultNetwork: cheese
+networkConfigPath: connection_brangus.json
+chaincodeName: nutrisafe-chaincode
+channelName: cheese
+certPath: brangus_admin_cert.pem
+privateKeyPath: brangus_private_key
+databaseConfig:
+  username: postgres
+  password: Blender123
   host: //localhost
   port: 5432

@@ -67,7 +67,6 @@ public class UserDatabaseConfig {
             System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default write whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteObject', '" + DEFAULT_WRITE_WHITELIST + "')");
-            jdbcTemplate.execute("insert into function(name, whitelist) values ('deletePrivateObject', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('createObject', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('setReceiver', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('changeOwner', '" + DEFAULT_WRITE_WHITELIST + "')");

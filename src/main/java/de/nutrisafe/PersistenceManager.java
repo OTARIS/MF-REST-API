@@ -7,7 +7,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
 
 import java.sql.PreparedStatement;
@@ -19,9 +18,6 @@ import java.util.*;
 @Service
 public class PersistenceManager {
 
-    private final Model modelMapper = new Model();
-    @Autowired
-    private UserDetailsManager userDetailsManager;
     @Autowired
     private UserDetailsService userDetailsService;
     @Autowired

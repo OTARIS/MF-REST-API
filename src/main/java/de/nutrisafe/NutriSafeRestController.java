@@ -50,7 +50,7 @@ import static org.springframework.http.ResponseEntity.*;
 @DependsOn("jwtTokenProvider")
 public class NutriSafeRestController {
 
-    private final Utils helper = new Utils();
+    private Utils helper;
 
     // bruteforce protection attributes
     private final HashMap<String, Integer> triesCount = new HashMap<>();
@@ -66,8 +66,6 @@ public class NutriSafeRestController {
     PersistenceManager persistenceManager;
     @Autowired
     UserDetailsManager userDetailsManager;
-    @Autowired
-    JdbcTemplate jdbcTemplate;
 
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> get(@RequestParam String function, @RequestParam(required = false) String[] args) {
@@ -98,7 +96,7 @@ public class NutriSafeRestController {
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
             String[] args = {bodyJson.toString()};
-            String response = helper.evaluateTransaction(config,"queryChaincodeByQueryString", args);
+            String response = getHelper().evaluateTransaction("queryChaincodeByQueryString", args);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
             return ok(responseJson.get("response").toString());
         } catch (UsernameNotFoundException e) {
@@ -173,8 +171,14 @@ public class NutriSafeRestController {
         }
     }
 
+    private Utils getHelper() {
+        if(helper == null)
+            helper = new Utils(config);
+        return helper;
+    }
+
     private ResponseEntity<?> hyperledgerGet(String function, String[] args) throws Exception {
-        String response = helper.evaluateTransaction(config, function, args);
+        String response = getHelper().evaluateTransaction(function, args);
         JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
         if (responseJson.get("status").toString().equals("\"200\""))
             return ok(responseJson.get("response").toString());
@@ -204,7 +208,7 @@ public class NutriSafeRestController {
                     pArgsByteMap.put(entry.getKey(), entry.getValue().getBytes());
                 }
             }
-            String response = helper.submitTransaction(config, function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
+            String response = getHelper().submitTransaction(function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
 
             if (responseJson.get("status").toString().equals("\"200\"")){
@@ -225,7 +229,7 @@ public class NutriSafeRestController {
     private ResponseEntity<?> getAllUsers() {
         JsonObject response = new JsonObject();
         JsonArray usernames = new JsonArray();
-        for(String username : selectAllUsers())
+        for(String username : persistenceManager.selectAllUsers())
             usernames.add(username);
         response.add("usernames", usernames);
         return ok(response.toString());
@@ -240,9 +244,9 @@ public class NutriSafeRestController {
 
     private ResponseEntity<?> getWhitelists() {
         JsonObject response = new JsonObject();
-        for(String whitelist : selectAllWhitelists()) {
+        for(String whitelist : persistenceManager.selectAllWhitelists()) {
             JsonArray functions = new JsonArray();
-            for(String function : selectFunctionToWhitelistEntriesOfWhitelist(whitelist))
+            for(String function : persistenceManager.selectFunctionToWhitelistEntriesOfWhitelist(whitelist))
                 functions.add(function);
             response.add(whitelist, functions);
         }
@@ -255,9 +259,9 @@ public class NutriSafeRestController {
         response.addProperty("role", getRole(username));
         JsonArray linkedToWhitelists = new JsonArray();
         Set<String> allowedFunctionSet = new HashSet<>();
-        for(String whitelist : selectUserToWhitelistEntriesOfUser(username)) {
+        for(String whitelist : persistenceManager.selectUserToWhitelistEntriesOfUser(username)) {
             linkedToWhitelists.add(whitelist);
-            allowedFunctionSet.addAll(selectFunctionToWhitelistEntriesOfWhitelist(whitelist));
+            allowedFunctionSet.addAll(persistenceManager.selectFunctionToWhitelistEntriesOfWhitelist(whitelist));
         }
         response.add("linkedToWhitelists", linkedToWhitelists);
         JsonArray allowedFunctions = new JsonArray();
@@ -270,58 +274,58 @@ public class NutriSafeRestController {
     private ResponseEntity<?> unlinkFunctionFromWhitelist(JsonObject bodyJson) throws InvalidException {
         String function = retrieveFunction(bodyJson, true);
         String whitelist = retrieveWhitelist(bodyJson, true, true);
-        if(!functionToWhitelistEntryExists(function, whitelist))
+        if(!persistenceManager.functionToWhitelistEntryExists(function, whitelist))
             throw new InvalidException(function + " is already unlinked from " + whitelist);
-        deleteFunctionToWhitelistEntry(function, whitelist);
+        persistenceManager.deleteFunctionToWhitelistEntry(function, whitelist);
         return ok(function + " unlinked from " + whitelist);
     }
 
     private ResponseEntity<?> linkFunctionToWhitelist(JsonObject bodyJson) throws InvalidException {
         String whitelist = retrieveWhitelist(bodyJson, true, true);
         String function = retrieveFunction(bodyJson, true);
-        if(functionToWhitelistEntryExists(function, whitelist))
+        if(persistenceManager.functionToWhitelistEntryExists(function, whitelist))
             throw new InvalidException(function + " is already linked to " + whitelist + ".");
-        insertFunctionToWhitelistEntry(function, whitelist);
+        persistenceManager.insertFunctionToWhitelistEntry(function, whitelist);
         return ok(function + " linked to " + whitelist);
     }
 
     private ResponseEntity<?> deleteWhitelist(JsonObject bodyJson) throws InvalidException {
         String whitelist = retrieveWhitelist(bodyJson, true, true);
-        deleteUserToWhitelistEntriesOfWhitelist(whitelist);
-        deleteFunctionToWhitelistEntriesOfWhitelist(whitelist);
-        deleteWhitelistEntry(whitelist);
+        persistenceManager.deleteUserToWhitelistEntriesOfWhitelist(whitelist);
+        persistenceManager.deleteFunctionToWhitelistEntriesOfWhitelist(whitelist);
+        persistenceManager.deleteWhitelistEntry(whitelist);
         return ok(whitelist + " deleted.");
     }
 
     private ResponseEntity<?> createWhitelist(JsonObject bodyJson) throws InvalidException {
         String whitelist = retrieveWhitelist(bodyJson, true, false);
-        if(whitelistExists(whitelist))
+        if(persistenceManager.whitelistExists(whitelist))
             throw new InvalidException(whitelist + " already exists.");
-        insertWhitelist(whitelist);
+        persistenceManager.insertWhitelist(whitelist);
         return ok(whitelist + " created.");
     }
 
     private ResponseEntity<?> linkUserToWhitelist(JsonObject bodyJson) throws InvalidException {
         String username = retrieveUsername(bodyJson, true, true);
         String whitelist = retrieveWhitelist(bodyJson, true, true);
-        if(userToWhitelistExists(username, whitelist))
+        if(persistenceManager.userToWhitelistExists(username, whitelist))
             throw new InvalidException(username + " is already linked to " + whitelist + ".");
-        insertUserToWhitelistEntry(username, whitelist);
+        persistenceManager.insertUserToWhitelistEntry(username, whitelist);
         return ok(username + " linked to " + whitelist + ".");
     }
 
     private ResponseEntity<?> unlinkUserFromWhitelist(JsonObject bodyJson) throws InvalidException {
         String username = retrieveUsername(bodyJson, true, true);
         String whitelist = retrieveWhitelist(bodyJson, true, true);
-        if (!userToWhitelistExists(username, whitelist))
+        if (!persistenceManager.userToWhitelistExists(username, whitelist))
             throw new InvalidException(username + " is already unlinked from " + whitelist + ".");
-        deleteUserToWhitelistEntry(username, whitelist);
+        persistenceManager.deleteUserToWhitelistEntry(username, whitelist);
         return ok(username + " unlinked from " + whitelist + ".");
     }
 
     private ResponseEntity<?> deleteUser(JsonObject bodyJson) throws InvalidException {
         String username = retrieveUsername(bodyJson, true, true);
-        deleteUserToWhitelistEntriesOfUser(username);
+        persistenceManager.deleteUserToWhitelistEntriesOfUser(username);
         userDetailsManager.deleteUser(username);
         return ok().body(username + " deleted.");
     }
@@ -355,16 +359,16 @@ public class NutriSafeRestController {
         // link to whitelist(s)
         switch (role) {
             case ROLE_ADMIN:
-                insertUserToWhitelistEntry(username, DEFAULT_ADMIN_WHITELIST);
+                persistenceManager.insertUserToWhitelistEntry(username, DEFAULT_ADMIN_WHITELIST);
             case ROLE_MEMBER:
-                insertUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
+                persistenceManager.insertUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
             default:
-                insertUserToWhitelistEntry(username, DEFAULT_READ_WHITELIST);
+                persistenceManager.insertUserToWhitelistEntry(username, DEFAULT_READ_WHITELIST);
         }
         if(whitelist == null) {
             return ok(username + " created.");
         } else {
-            insertUserToWhitelistEntry(username, whitelist);
+            persistenceManager.insertUserToWhitelistEntry(username, whitelist);
             return ok(username + " created and linked to " + whitelist + ".");
         }
     }
@@ -390,17 +394,17 @@ public class NutriSafeRestController {
         boolean readOnly = true;
         switch (newRole) {
             case ROLE_ADMIN:
-                if(!userToWhitelistExists(username, DEFAULT_ADMIN_WHITELIST))
-                    insertUserToWhitelistEntry(username, DEFAULT_ADMIN_WHITELIST);
+                if(!persistenceManager.userToWhitelistExists(username, DEFAULT_ADMIN_WHITELIST))
+                    persistenceManager.insertUserToWhitelistEntry(username, DEFAULT_ADMIN_WHITELIST);
             case ROLE_MEMBER:
-                if(oldRole.equalsIgnoreCase(ROLE_USER) && !userToWhitelistExists(username, DEFAULT_WRITE_WHITELIST))
-                    insertUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
+                if(oldRole.equalsIgnoreCase(ROLE_USER) && !persistenceManager.userToWhitelistExists(username, DEFAULT_WRITE_WHITELIST))
+                    persistenceManager.insertUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
                 readOnly = false;
             default:
-                if(oldRole.equalsIgnoreCase(ROLE_ADMIN) && userToWhitelistExists(username, DEFAULT_ADMIN_WHITELIST))
-                    deleteUserToWhitelistEntry(username, DEFAULT_ADMIN_WHITELIST);
-                if(readOnly && userToWhitelistExists(username, DEFAULT_WRITE_WHITELIST))
-                    deleteUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
+                if(oldRole.equalsIgnoreCase(ROLE_ADMIN) && persistenceManager.userToWhitelistExists(username, DEFAULT_ADMIN_WHITELIST))
+                    persistenceManager.deleteUserToWhitelistEntry(username, DEFAULT_ADMIN_WHITELIST);
+                if(readOnly && persistenceManager.userToWhitelistExists(username, DEFAULT_WRITE_WHITELIST))
+                    persistenceManager.deleteUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
         }
         return ok(newRole + " set for " + username);
     }
@@ -418,137 +422,6 @@ public class NutriSafeRestController {
         }
         return role;
     }
-
-    /* Database helper functions */
-
-    private List<String> selectAllUsers() {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select username from users");
-            return preparedStatement;
-        };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
-    }
-
-    private List<String> selectUserToWhitelistEntriesOfUser(final String username) {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select whitelist from user_to_whitelist where username = ?");
-            preparedStatement.setString(1, username);
-            return preparedStatement;
-        };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
-    }
-
-    private List<String> selectFunctionToWhitelistEntriesOfWhitelist(final String whitelist) {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select name from function where whitelist = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
-        };
-        List<String> functions = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return functions;
-    }
-
-    private List<String> selectAllWhitelists() {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select name from whitelist");
-            return preparedStatement;
-        };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
-    }
-
-    private void deleteWhitelistEntry(final String whitelist) {
-        PreparedStatementCreator whitelistDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from whitelist where name = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(whitelistDeleteStatement);
-    }
-
-    private void deleteUserToWhitelistEntriesOfUser(final String username) {
-        PreparedStatementCreator userToWhitelistDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where username = ?");
-            preparedStatement.setString(1, username);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(userToWhitelistDeleteStatement);
-    }
-
-    private void deleteUserToWhitelistEntriesOfWhitelist(final String whitelist) {
-        PreparedStatementCreator userToWhitelistDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where whitelist = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(userToWhitelistDeleteStatement);
-    }
-
-    private void deleteUserToWhitelistEntry(final String username, final String whitelist) {
-        PreparedStatementCreator userToWhitelistDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where username = ? and whitelist = ?");
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(userToWhitelistDeleteStatement);
-    }
-
-    private void deleteFunctionToWhitelistEntriesOfWhitelist(String whitelist) {
-        PreparedStatementCreator functionDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from function where whitelist = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(functionDeleteStatement);
-    }
-
-    private void deleteFunctionToWhitelistEntry(final String function, final String whitelist) {
-        PreparedStatementCreator functionDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from function where name = ? and whitelist = ?");
-            preparedStatement.setString(1, function);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(functionDeleteStatement);
-    }
-
-    private void insertWhitelist(final String whitelist) {
-        PreparedStatementCreator whitelistInsertStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into whitelist(name) values (?)");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(whitelistInsertStatement);
-    }
-
-    private void insertUserToWhitelistEntry(final String username, final String whitelist) {
-        PreparedStatementCreator whitelistInsertStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
-                    "user_to_whitelist(username, whitelist) " +
-                    "values (?, ?)");
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(whitelistInsertStatement);
-    }
-
-    private void insertFunctionToWhitelistEntry(final String function, final String whitelist) {
-        PreparedStatementCreator whitelistInsertStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
-                    "function(name, whitelist) " +
-                    "values (?, ?)");
-            preparedStatement.setString(1, function);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(whitelistInsertStatement);
-    }
-
-    /* End of database helper functions */
 
     /* Parsing body content */
 
@@ -579,7 +452,7 @@ public class NutriSafeRestController {
         } else if(required)
             throw new RequiredException("Whitelist required.");
         else return null;
-        if(existing && !whitelistExists(whitelist))
+        if(existing && !persistenceManager.whitelistExists(whitelist))
             throw new InvalidException("Whitelist " + whitelist + " does not exist.");
         else return whitelist;
     }
@@ -611,55 +484,6 @@ public class NutriSafeRestController {
     }
 
     /* End of parsing body content */
-
-    /* Database checks */
-
-    private boolean whitelistExists(String whitelist) {
-        RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
-        PreparedStatementCreator whitelistSelectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select * from whitelist " +
-                    "where name = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.query(whitelistSelectStatement, countCallback);
-        return countCallback.getRowCount() > 0;
-    }
-
-    private boolean functionToWhitelistEntryExists(String function, String whitelist) {
-        RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
-        PreparedStatementCreator functionToWhitelistSelectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select * from function " +
-                    "where name = ? and whitelist = ?");
-            preparedStatement.setString(1, function);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.query(functionToWhitelistSelectStatement, countCallback);
-        return countCallback.getRowCount() > 0;
-    }
-
-    private boolean userToWhitelistExists(String username, String whitelist) {
-        RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
-        PreparedStatementCreator userToWhitelistSelectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select * from user_to_whitelist " +
-                    "where username = ? and whitelist = ?");
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
-        };
-        jdbcTemplate.query(userToWhitelistSelectStatement, countCallback);
-        return countCallback.getRowCount() > 0;
-    }
-
-    /* End of database checks */
-
-    private class SimpleStringRowMapper implements RowMapper<String> {
-        @Override
-        public String mapRow(ResultSet resultSet, int i) throws SQLException {
-            return resultSet.getString(1);
-        }
-    }
 
     /* Custom Exceptions */
 

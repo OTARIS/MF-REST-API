@@ -1,46 +1,44 @@
 package de.nutrisafe;
 
 import org.hyperledger.fabric.gateway.*;
-//import org.hyperledger.fabric.gateway.impl.InMemoryWallet;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ResourceUtils;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
 
-    Config config;
+    private Config config;
 
-    public Wallet loadWallet() throws IOException, CertificateException {
+    public Utils(Config config) {
+        this.config = config;
+    }
+
+    private Wallet loadWallet() throws IOException {
         Wallet wallet = Wallets.newInMemoryWallet();
-        wallet.put(config.getCompany(), Identities.newX509Identity(config.getCompany(), loadCertificate(), loadPrivateKey()));
+        wallet.put(config.getCompany(), Identities.newX509Identity(config.getCompany(),
+                Objects.requireNonNull(loadCertificate()),
+                Objects.requireNonNull(loadPrivateKey())));
         return wallet;
     }
 
-
-
-    private X509Certificate loadCertificate() throws CertificateException {
+    private X509Certificate loadCertificate() {
         try {
-            //TODO: Zertifakte sollten über config geladen werden (Problem siehe oben)
             File file = ResourceUtils.getFile("classpath:" + config.getCertPath());
             byte[] encodedCert = Files.readAllBytes(file.toPath());
             ByteArrayInputStream inputStream = new ByteArrayInputStream(encodedCert);
@@ -53,12 +51,11 @@ public class Utils {
         return null;
     }
 
-    public PrivateKey loadPrivateKey() {
+    private PrivateKey loadPrivateKey() {
         try {
-            File file = ResourceUtils.getFile("classpath:" + config.getPrivateKeyPath());
-            //String privateKeyPEM = new String(Files.readAllBytes(file.toPath()));
-            //privateKeyPEM = privateKeyPEM.replaceAll("\\n|-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----", "");
-            String privateKeyPEM ="MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgIWma6xI+9V4eSr8J6pF5QcqT+7ZF85/uGy5gO5ZzFA6hRANCAASm+0EOKrjW0h7pXhrWxY6QrpG/+BHDIpHQ1ujaOidLhbDhscqwkCoH1ojXvzkD1+nmb+1EphnthMtruZAbeJE2";
+            Reader reader = new InputStreamReader(new DefaultResourceLoader().getResource(
+                    config.getPrivateKeyPath()).getInputStream(), UTF_8);
+            String privateKeyPEM = FileCopyUtils.copyToString(reader);
             byte[] encoded = Base64.getDecoder().decode(privateKeyPEM);
             KeyFactory kf = KeyFactory.getInstance("EC");
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
@@ -93,15 +90,14 @@ public class Utils {
 
             contract = network.getContract(config.getChaincodeName());
 
-        } catch (IOException | CertificateException e) {
-            System.err.println("Could not prepare the transaction.");
+        } catch (IOException e) {
+            System.err.println("[NutriSafe REST API] Could not prepare the transaction.");
             e.printStackTrace();
         }
         return contract;
     }
 
-    public String submitTransaction(Config config, final String function, String[] args, HashMap<String, byte[]> pArgs) {
-        this.config = config;
+    public String submitTransaction(final String function, String[] args, HashMap<String, byte[]> pArgs) {
         String ret = "";
         try {
             Contract contract = prepareTransaction();
@@ -116,7 +112,7 @@ public class Utils {
                         .setTransient(pArgs)
                         .submit(args);
             }
-            ret = new String(result, StandardCharsets.UTF_8);
+            ret = new String(result, UTF_8);
 
         } catch (IOException | TimeoutException | ContractException | InterruptedException e) {
             e.printStackTrace();
@@ -125,8 +121,7 @@ public class Utils {
         return ret;
     }
 
-    public String evaluateTransaction(Config config, final String function, final String[] args) throws Exception {
-        this.config = config;
+    public String evaluateTransaction(final String function, final String[] args) throws Exception {
         String ret = "";
         try {
             Contract contract = prepareTransaction();
@@ -138,8 +133,8 @@ public class Utils {
             else {
                 result = contract.evaluateTransaction(function, args);
             }
-            System.out.println(new String(result, StandardCharsets.UTF_8));
-            ret = new String(result, StandardCharsets.UTF_8);
+            System.out.println(new String(result, UTF_8));
+            ret = new String(result, UTF_8);
 
         } catch (IOException | ContractException e) {
             e.printStackTrace();

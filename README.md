@@ -1,4 +1,11 @@
-<div style="background: #193954 url(https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/pattern-gro%C3%9F-wei%C3%9F-emvy.png) repeat;"><img src="https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/NutriSafe_Logo.svg"/></div>
+<style>
+.nutrisafe {
+  background: #193954 url(https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/pattern-gro%C3%9F-wei%C3%9F-emvy.png) repeat;
+}
+</style>
+<div class="nutrisafe">
+	<img src="https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/NutriSafe_Logo.svg"/>
+</div>
 
 # REST API #
 
@@ -24,7 +31,7 @@ We continuously work on and extend the REST API. Combined with the NutriSafe Dis
 We plan on making a simple setup for this (a docker container or installer), but for now you need to set it up by yourself. However we do not leave you alone with this task, so here is your checklist:
 
 1. Download or clone the **GitHub code** and make sure you satisfy all dependencies ([Hyperledger Fabric Gateway](https://github.com/hyperledger/fabric-gateway-java "Hyperledger Fabric Gateway API on GitHub"), [Spring Boot](https://spring.io/projects/spring-boot "Spring Boot Project"), [Spring Security](https://spring.io/projects/spring-security "Spring Security Project"),...). Copy the [**certificates and private keys**](https://hyperledger-fabric.readthedocs.io/en/latest/identity/identity.html "Identity management of Hyperledger Fabric") of your organization's network registration into your [resource folder](https://github.com/dl-ota/Nutrisafe-REST-API/tree/master/src/main/resources "The resource folder").
-2. Configure your [**connection json file**](https://github.com/hyperledger/fabric-gateway-java/blob/master/src/test/java/org/hyperledger/fabric/gateway/connection.json "Example file for a connection configuration") for the Hyperledger Fabric Gateway API inside your resource folder with details about the peers that you want to connect to.
+2. Configure your [**connection json file**](https://github.com/hyperledger/fabric-gateway-java/blob/master/src/test/java/org/hyperledger/fabric/gateway/connection.json "Example file for a connection configuration") for the Hyperledger Fabric Gateway API inside your resource folder with details about the peers that you want to connect to. Make sure to only use peers of a compatible network like the NutriSafe Distributed Ledger Network.
 3. Install and run an empty [**PostgreSQL database**](https://www.postgresql.org/download/ "PostgreSQL download") for the REST API's user management and remember your credentials.
 4. Setup a custom profile for your REST API under the resource folder in **[application.yml](https://github.com/dl-ota/Nutrisafe-REST-API/blob/master/src/main/resources/application.yml "Example profile")**. This will contain your registered organization name, your database credentials, the name of your connection file and some more network information like your channel name and your certificate and private key file names.
 5. Make sure the correct profile name is set in **[application.properties](https://github.com/dl-ota/Nutrisafe-REST-API/blob/master/src/main/resources/application.properties "Example properties file")** and, if you wish, use even more options here for further customization (e.g. for changing the port).

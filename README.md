@@ -1,8 +1,10 @@
+<head>
 <style>
 .nutrisafe {
   background: #193954 url(https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/pattern-gro%C3%9F-wei%C3%9F-emvy.png) repeat;
 }
 </style>
+</head>
 <div class="nutrisafe">
 	<img src="https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/NutriSafe_Logo.svg"/>
 </div>

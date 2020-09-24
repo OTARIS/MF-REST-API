@@ -25,12 +25,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/auth",
-					"protocol": "http",
+					"raw": "{{url}}/auth",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"auth"
 					]
@@ -58,12 +56,10 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/get?function=META_readMetaDef",
-					"protocol": "http",
+					"raw": "{{url}}/get?function=META_readMetaDef",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"get"
 					],
@@ -98,12 +94,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=META_addAttributeDefinition",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=META_addAttributeDefinition",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -138,12 +132,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=META_addProductDefinition",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=META_addProductDefinition",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -178,12 +170,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=META_addUnit",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=META_addUnit",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -218,12 +208,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=setReceiver",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=setReceiver",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -258,12 +246,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=changeOwner",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=changeOwner",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -298,12 +284,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=updateAttribute",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=updateAttribute",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -338,12 +322,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=updatePrivateAttribute",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=updatePrivateAttribute",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -378,12 +360,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=activateAlarm",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=activateAlarm",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -418,12 +398,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=addPredecessor",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=addPredecessor",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -458,12 +436,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=createObject",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=createObject",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -498,12 +474,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=createObject",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=createObject",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -538,12 +512,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/select",
-					"protocol": "http",
+					"raw": "{{url}}/select",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"select"
 					]
@@ -563,12 +535,10 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/get?function=readObject&args=MILK1",
-					"protocol": "http",
+					"raw": "{{url}}/get?function=readObject&args=MILK1",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"get"
 					],
@@ -607,12 +577,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=deleteObject",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=deleteObject",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -647,12 +615,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=createUser",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=createUser",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -727,12 +693,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=setRole",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=setRole",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -767,12 +731,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=createWhitelist",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=createWhitelist",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -807,12 +769,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=deleteWhitelist",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=deleteWhitelist",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -847,12 +807,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=linkFunctionToWhitelist",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=linkFunctionToWhitelist",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -887,12 +845,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=unlinkFunctionFromWhitelist",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=unlinkFunctionFromWhitelist",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -927,12 +883,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=linkUserToWhitelist",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=linkUserToWhitelist",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -967,12 +921,10 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/submit?function=unlinkUserFromWhitelist",
-					"protocol": "http",
+					"raw": "{{url}}/submit?function=unlinkUserFromWhitelist",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"submit"
 					],
@@ -998,12 +950,10 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/get?function=getAllUsers",
-					"protocol": "http",
+					"raw": "{{url}}/get?function=getAllUsers",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"get"
 					],
@@ -1029,12 +979,10 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/get?function=getUserInfo",
-					"protocol": "http",
+					"raw": "{{url}}/get?function=getUserInfo",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"get"
 					],
@@ -1095,12 +1043,10 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8080/get?function=getWhitelists",
-					"protocol": "http",
+					"raw": "{{url}}/get?function=getWhitelists",
 					"host": [
-						"localhost"
+						"{{url}}"
 					],
-					"port": "8080",
 					"path": [
 						"get"
 					],

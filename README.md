@@ -1,17 +1,8 @@
-<head>
-<style>
-.nutrisafe {
-  background: #193954 url(https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/pattern-gro%C3%9F-wei%C3%9F-emvy.png) repeat;
-}
-</style>
-</head>
-<div class="nutrisafe">
-	<img src="https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/NutriSafe_Logo.svg"/>
-</div>
+![NutriSafe](https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/NutriSafe_Logo.svg "NutriSafe Logo")
 
 # REST API #
 
-The NutriSafe REST API is the interface to the NutriSafe Distributed Ledger Network for organizations. You can read, write, update, create and delete objects in the blockchain network with simple commands and even define new object types (so called meta objects). Furthermore different roles from different use cases of an organization can be mapped to users with customizable access rights for all chaincode functions.
+The NutriSafe REST API is an interface to the NutriSafe Distributed Ledger Network for organizations. You can read, write, update, create and delete objects in the blockchain network with simple commands and even define new object types (so called meta objects). Furthermore different roles from different use cases of an organization can be mapped to users with customizable access rights for all chaincode functions.
 
 Possible use cases include, but are not limited to:
 * read access for the company's management dashboard
@@ -44,7 +35,7 @@ Compile and you should be ready to go!
 
 The REST API offers the following basic commands:
 
-### .../auth ###
+### POST .../auth ###
 This command is used for your authentication. Send a POST request with a JSON object in its body containing your username and password in order to receive a JWT token. You need this token for the authorization of other API calls.
 
 **Example:**
@@ -64,7 +55,7 @@ Usage in the header of other API calls:
 	Accept:*/*
 	Authorization: Bearer eyJhb...
 
-### .../get ###
+### GET .../get ###
 This command retrieves different information from the chaincode or from the REST API's user management. Arguments are applied as URL parameters ("args").
 
 The following example commands are getting forwarded to the chaincode:
@@ -95,10 +86,10 @@ The following example commands are directly handled by the REST API:
 	<!-- next code line -->
 		.../get?function=getWhitelists
 
-### .../select ###
+### POST .../select ###
 This command select different information from the chaincode by applying a query. This allows to search for objects which comply with a certain filter strategy.
 
-### .../submit ###
+### POST .../submit ###
 This command writes information to the chaincode or to the REST API's user management. Arguments are given as JSON-formatted body content.
 
 The following example commands are getting forwarded to the chaincode:

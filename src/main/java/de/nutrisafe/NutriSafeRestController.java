@@ -473,14 +473,17 @@ public class NutriSafeRestController {
         else return username;
     }
 
-    private String retrievePassword(JsonObject bodyJson, boolean required) {
+    private String retrievePassword(JsonObject bodyJson, boolean required) throws InvalidException {
+        String password = null;
         if (bodyJson.has("password"))
-            return bodyJson.get("password").toString().replace("\"","");
+            password = bodyJson.get("password").toString().replace("\"","");
         else if (bodyJson.has("pass"))
-            return bodyJson.get("pass").toString().replace("\"","");
+            password = bodyJson.get("pass").toString().replace("\"","");
         else if(required)
             throw new RequiredException("Password required.");
-        else return null;
+        if(password != null && password.length() < 8)
+            throw new InvalidException("Passwords must be at least 8 characters long.");
+        return password;
     }
 
     /* End of parsing body content */

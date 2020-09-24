@@ -70,12 +70,12 @@ public class NutriSafeRestController {
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> get(@RequestParam String function, @RequestParam(required = false) String[] args) {
         try {
-            User user = persistenceManager.getCurrentUser();
+            UserDetails user = persistenceManager.getCurrentUser();
             if(user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             return switch(function) {
                 case "getAllUsers" -> getAllUsers();
-                case "getUserInfo" -> getUserInfo(user.getName());
+                case "getUserInfo" -> getUserInfo(user.getUsername());
                 case "getUserInfoOfUser" -> getUserInfo(args);
                 case "getWhitelists" -> getWhitelists();
                 default -> hyperledgerGet(function, args);
@@ -91,7 +91,7 @@ public class NutriSafeRestController {
     @PostMapping(value = "/select", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> select(@RequestBody String body) {
         try {
-            User user = persistenceManager.getCurrentUser();
+            UserDetails user = persistenceManager.getCurrentUser();
             if(user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
@@ -110,7 +110,7 @@ public class NutriSafeRestController {
     @PostMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> submit(@RequestParam String function, @RequestBody(required = false) String body) {
         try {
-            User user = persistenceManager.getCurrentUser();
+            UserDetails user = persistenceManager.getCurrentUser();
             if(user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             else {

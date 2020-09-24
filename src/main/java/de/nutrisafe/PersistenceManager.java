@@ -23,11 +23,10 @@ public class PersistenceManager {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public User getCurrentUser() {
+    public UserDetails getCurrentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if(principal instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) principal;
-            return new User(userDetails.getUsername(), userDetails.isEnabled());
+            return (UserDetails) principal;
         } else
             return null;
     }

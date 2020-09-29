@@ -107,7 +107,7 @@ public class UserDatabaseConfig {
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
             authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
             UserDetails user = new org.springframework.security.core.userdetails.User("nutriuser",
-                    new BCryptPasswordEncoder().encode("12345"), authorities);
+                    new BCryptPasswordEncoder().encode("12345678"), authorities);
             userDetailsManager.createUser(user);
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('nutriuser', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('nutriuser', '" + DEFAULT_WRITE_WHITELIST + "')");
@@ -118,7 +118,7 @@ public class UserDatabaseConfig {
             List<GrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
             UserDetails user = new org.springframework.security.core.userdetails.User("public",
-                    new BCryptPasswordEncoder().encode("12345"), authorities);
+                    new BCryptPasswordEncoder().encode("12345678"), authorities);
             userDetailsManager.createUser(user);
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('public', '" + DEFAULT_READ_WHITELIST + "')");
             Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
@@ -130,7 +130,7 @@ public class UserDatabaseConfig {
             authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
             authorities.add(new SimpleGrantedAuthority(ROLE_ADMIN));
             UserDetails user = new org.springframework.security.core.userdetails.User("admin",
-                    new BCryptPasswordEncoder().encode("12345"), authorities);
+                    new BCryptPasswordEncoder().encode("12345678"), authorities);
             userDetailsManager.createUser(user);
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('admin', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('admin', '" + DEFAULT_WRITE_WHITELIST + "')");

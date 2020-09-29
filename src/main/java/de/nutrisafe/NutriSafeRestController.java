@@ -176,8 +176,13 @@ public class NutriSafeRestController {
     }
 
     private Utils getHelper() {
-        if(helper == null)
+        if(helper == null) {
+            config.setCompany(Main.mspId);
+            config.setNetworkConfigPath(Main.connectionJson);
+            config.setPrivateKeyPath(Main.privateKey);
+            config.setCertPath(Main.adminCert);
             helper = new Utils(config);
+        }
         return helper;
     }
 

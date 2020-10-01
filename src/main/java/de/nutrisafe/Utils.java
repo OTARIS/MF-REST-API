@@ -1,12 +1,15 @@
 package de.nutrisafe;
 
+import org.apache.commons.io.IOUtils;
 import org.hyperledger.fabric.gateway.*;
 
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ResourceUtils;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyFactory;
@@ -35,12 +38,15 @@ public class Utils {
                 Objects.requireNonNull(loadCertificate()),
                 Objects.requireNonNull(loadPrivateKey())));
         return wallet;
+
     }
 
     private X509Certificate loadCertificate() {
         try {
-            File file = ResourceUtils.getFile("classpath:" + config.getCertPath());
-            byte[] encodedCert = Files.readAllBytes(file.toPath());
+            FileInputStream fileInputStream = new FileInputStream(config.getCertPath());
+            byte[] encodedCert = IOUtils.toByteArray(fileInputStream);
+            //ClassPathResource classPathResource = new ClassPathResource(config.getCertPath());
+            //byte[] encodedCert = FileCopyUtils.copyToByteArray(classPathResource.getInputStream());
             ByteArrayInputStream inputStream = new ByteArrayInputStream(encodedCert);
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             return (X509Certificate) certFactory.generateCertificate(inputStream);
@@ -53,8 +59,10 @@ public class Utils {
 
     private PrivateKey loadPrivateKey() {
         try {
-            File file = ResourceUtils.getFile("classpath:" + config.getPrivateKeyPath());
-            String privateKeyPEM = new String(Files.readAllBytes(file.toPath()));
+            FileInputStream fileInputStream = new FileInputStream(config.getPrivateKeyPath());
+            //ClassPathResource classPathResource = new ClassPathResource(config.getPrivateKeyPath());
+            //InputStream ci = classPathResource.getInputStream();
+            String privateKeyPEM = IOUtils.toString(fileInputStream, UTF_8);
             privateKeyPEM = privateKeyPEM.replaceAll("-----BEGIN PRIVATE KEY-----", "");
             privateKeyPEM = privateKeyPEM.replaceAll("-----END PRIVATE KEY-----", "");
             privateKeyPEM = privateKeyPEM.replace("\n", "").replace("\r", "");
@@ -80,12 +88,13 @@ public class Utils {
              * Preparing a builder for our Gateway.
              * .discovery(): Service discovery for all transaction submissions is enabled.
             */
-            Path networkConfigFile = ResourceUtils.getFile("classpath:" + config.getNetworkConfigPath()).toPath();
+
+            FileInputStream fileInputStream = new FileInputStream(config.getNetworkConfigPath());
+            //ClassPathResource classPathResource = new ClassPathResource(config.getNetworkConfigPath());
             Gateway.Builder builder = Gateway.createBuilder()
                     .identity(loadWallet(), config.getCompany())
-                    .networkConfig(networkConfigFile);
+                    .networkConfig(fileInputStream);
                     //.discovery(true);
-
             final Gateway gateway = builder.connect();
 
             final Network network = gateway.getNetwork(config.getChannelName());

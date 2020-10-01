@@ -8,9 +8,11 @@ import com.google.gson.reflect.TypeToken;
 import de.nutrisafe.jwt.JwtTokenProvider;
 import org.apache.commons.compress.PasswordRequiredException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -35,6 +37,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,6 +45,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 import static de.nutrisafe.UserDatabaseConfig.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.ResponseEntity.*;
 
 @Lazy
@@ -172,8 +176,13 @@ public class NutriSafeRestController {
     }
 
     private Utils getHelper() {
-        if(helper == null)
+        if(helper == null) {
+            config.setCompany(Main.mspId);
+            config.setNetworkConfigPath(Main.connectionJson);
+            config.setPrivateKeyPath(Main.privateKey);
+            config.setCertPath(Main.adminCert);
             helper = new Utils(config);
+        }
         return helper;
     }
 
@@ -188,12 +197,13 @@ public class NutriSafeRestController {
 
     private ResponseEntity<?> hyperledgerSubmit(String function, JsonObject bodyJson) {
         try {
-            File jsonFile = ResourceUtils.getFile("classpath:key_defs.json");
-            JsonObject keyDefsJson = (JsonObject) JsonParser.parseString( FileUtils.readFileToString(jsonFile, StandardCharsets.UTF_8));
+            ClassPathResource classPathResource = new ClassPathResource("key_defs.json");
+            InputStream inputStream = classPathResource.getInputStream();
+            JsonObject keyDefsJson = (JsonObject) JsonParser.parseString(IOUtils.toString(inputStream, UTF_8));
 
             HashMap<String, String> keyDefs  = new Gson().fromJson(keyDefsJson, new TypeToken<HashMap<String, String>>() {}.getType());
             ArrayList<String> attributesToPass = new ArrayList<>();
-            //iterate over the allowed key definitions. If the request body contains this key, the value will be added to attributesToPass
+            //iterates over the allowed key definitions. If the request body contains this key, the value will be added to attributesToPass
             for (int i = 1; i < keyDefs.size(); i++){
                 if (bodyJson.has(keyDefs.get(String.valueOf(i)))){
                     attributesToPass.add(bodyJson.get(keyDefs.get(String.valueOf(i))).toString().replace("\"",""));

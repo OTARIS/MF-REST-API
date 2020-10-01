@@ -37,25 +37,25 @@
   },
   "orderers": {
     "orderer.unibw.de": {
-      "url": "grpcs://192.168.56.101:7050",
+      "url": "grpcs://137.193.112.87:7050",
       "grpcOptions": {
         "ssl-target-name-override": "orderer.unibw.de",
         "hostnameOverride": "orderer.unibw.de"
       },
       "tlsCACerts": {
-        "path": "src\\main\\resources\\orderer_tlsca_cert.crt"
+        "path": "C:\\NutriSafe\\Zertifikate\\orderer_tlsca_cert.crt"
       }
     }
   },
   "peers": {
     "peer0.brangus.de": {
-      "url": "grpcs://192.168.56.101:7071",
+      "url": "grpcs://137.193.112.87:7071",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.brangus.de",
         "hostnameOverride": "peer0.brangus.de"
       },
       "tlsCACerts": {
-        "path": "src\\main\\resources\\brangus_tlsca_cert.crt"
+        "path": "C:\\NutriSafe\\Zertifikate\\brangus_tlsca_cert.crt"
       }
     }
   }

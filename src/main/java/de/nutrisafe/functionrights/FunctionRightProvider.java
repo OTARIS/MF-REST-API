@@ -13,6 +13,14 @@ import org.springframework.stereotype.Component;
 import javax.servlet.ServletRequest;
 import java.sql.PreparedStatement;
 
+/**
+ * The FunctionRightProvider validates if a {@link javax.servlet.ServletRequest} is allowed by the current user based
+ * on the configured whitelists.
+ *
+ * You can check this by calling {@link #validateFunction(ServletRequest)}.
+ *
+ * @author Dennis Lamken
+ */
 @Lazy
 @Component
 @DependsOn("jdbcTemplate")
@@ -22,6 +30,13 @@ public class FunctionRightProvider {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
+    /**
+     * Validates if a {@link javax.servlet.ServletRequest} is allowed by the current user based on the configured
+     * whitelists.
+     *
+     * @param req the request that needs to be checked
+     * @return true if the function call is allowed or if no function parameter is given, else false
+     */
     public boolean validateFunction(ServletRequest req) {
         String function = req.getParameter("function");
         if(function != null) {

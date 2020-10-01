@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="NutriSafe_REST_API:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/NutriSafe_REST_API_jar</output-path>
+    <root id="archive" name="NutriSafe_REST_API.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+      </element>
+    </root>
+  </artifact>
+</component>

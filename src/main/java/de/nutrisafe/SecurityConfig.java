@@ -43,7 +43,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/auth").permitAll()
                 .antMatchers("/get").hasAuthority("ROLE_USER")
                 .antMatchers("/select").hasAuthority("ROLE_USER")
-                .antMatchers("/submit").hasAuthority("ROLE_MEMBER")
+                .antMatchers("/submit").hasAuthority("ROLE_USER")
         ).formLogin().disable().csrf().disable().apply(new JwtConfigurer(jwtTokenProvider))
                 .and().apply(new FunctionRightConfigurer(functionRightProvider));
         http.cors();

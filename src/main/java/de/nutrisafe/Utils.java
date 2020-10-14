@@ -3,6 +3,8 @@ package de.nutrisafe;
 import org.apache.commons.io.IOUtils;
 import org.hyperledger.fabric.gateway.*;
 
+import org.hyperledger.fabric.sdk.BlockEvent;
+import org.hyperledger.fabric.sdk.BlockInfo;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.FileCopyUtils;
@@ -21,12 +23,15 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
 
     private Config config;
+    private Network network = null;
+    private Gateway gateway = null;
 
     public Utils(Config config) {
         this.config = config;
@@ -88,17 +93,17 @@ public class Utils {
              * Preparing a builder for our Gateway.
              * .discovery(): Service discovery for all transaction submissions is enabled.
             */
+            if(network == null) {
+                FileInputStream fileInputStream = new FileInputStream(config.getNetworkConfigPath());
+                //ClassPathResource classPathResource = new ClassPathResource(config.getNetworkConfigPath());
+                Gateway.Builder builder = Gateway.createBuilder()
+                        .identity(loadWallet(), config.getCompany())
+                        .networkConfig(fileInputStream);
+                //.discovery(true);
+                gateway = builder.connect();
 
-            FileInputStream fileInputStream = new FileInputStream(config.getNetworkConfigPath());
-            //ClassPathResource classPathResource = new ClassPathResource(config.getNetworkConfigPath());
-            Gateway.Builder builder = Gateway.createBuilder()
-                    .identity(loadWallet(), config.getCompany())
-                    .networkConfig(fileInputStream);
-                    //.discovery(true);
-            final Gateway gateway = builder.connect();
-
-            final Network network = gateway.getNetwork(config.getChannelName());
-
+                network = gateway.getNetwork(config.getChannelName());
+            }
             contract = network.getContract(config.getChaincodeName());
 
         } catch (IOException e) {
@@ -112,6 +117,7 @@ public class Utils {
         String ret = "";
         try {
             Contract contract = prepareTransaction();
+            
             if(contract == null) throw new IOException();
             final byte[] result;
             if (pArgs.size() == 0){

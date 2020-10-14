@@ -117,7 +117,9 @@ public class Utils {
         String ret = "";
         try {
             Contract contract = prepareTransaction();
-            
+
+            Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
+
             if(contract == null) throw new IOException();
             final byte[] result;
             if (pArgs.size() == 0){

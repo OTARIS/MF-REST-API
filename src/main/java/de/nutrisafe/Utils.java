@@ -3,17 +3,9 @@ package de.nutrisafe;
 import org.apache.commons.io.IOUtils;
 import org.hyperledger.fabric.gateway.*;
 
-import org.hyperledger.fabric.sdk.BlockEvent;
-import org.hyperledger.fabric.sdk.BlockInfo;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.util.FileCopyUtils;
-import org.springframework.util.ResourceUtils;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.cert.CertificateFactory;
@@ -32,6 +24,7 @@ public class Utils {
     private Config config;
     private Network network = null;
     private Gateway gateway = null;
+    private String alarmFlag = null;
 
     public Utils(Config config) {
         this.config = config;
@@ -118,7 +111,8 @@ public class Utils {
         try {
             Contract contract = prepareTransaction();
 
-            Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
+            //Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
+            Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> alarmFlag = "ALARM");
 
             if(contract == null) throw new IOException();
             final byte[] result;
@@ -160,5 +154,9 @@ public class Utils {
             System.out.println(e);
         }
         return ret;
+    }
+
+    String getAlarmFlag(){
+        return this.alarmFlag;
     }
 }

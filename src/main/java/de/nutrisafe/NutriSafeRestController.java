@@ -87,12 +87,14 @@ public class NutriSafeRestController {
         ForkJoinPool.commonPool().submit(() -> {
             try {
                 while(helper.getAlarmFlag() == null) {
-                    Thread.sleep(3000);
+                    Thread.sleep(1000);
                     System.out.println("IN TRY");
                 }
             } catch (InterruptedException e) {
             }
-            deferredResult.setResult(ResponseEntity.ok("SUCCESS"));
+            System.out.println(helper.getAlarmFlag());
+            deferredResult.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
+            helper.resetAlarmFlag();
         });
 
         return deferredResult;

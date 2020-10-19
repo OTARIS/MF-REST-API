@@ -1,6 +1,8 @@
 package de.nutrisafe;
 
+import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
+import com.google.gson.JsonParser;
 import org.hyperledger.fabric.gateway.*;
 
 import java.io.ByteArrayInputStream;
@@ -112,7 +114,7 @@ public class Utils {
             Contract contract = prepareTransaction();
 
             //Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
-            Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> alarmFlag = "ALARM");
+            Consumer<ContractEvent> listener = contract.addContractListener(this::alarmActivated);
 
             if(contract == null) throw new IOException();
             final byte[] result;
@@ -156,7 +158,17 @@ public class Utils {
         return ret;
     }
 
-    String getAlarmFlag(){
+    public String getAlarmFlag(){
         return this.alarmFlag;
+    }
+
+    public void resetAlarmFlag(){
+        alarmFlag = null;
+    }
+
+    public void alarmActivated(ContractEvent e){
+        String pl = new String(e.getPayload().get(), UTF_8);
+        JsonObject ret = (JsonObject) JsonParser.parseString(pl);
+        alarmFlag = ret.get("key").toString();
     }
 }

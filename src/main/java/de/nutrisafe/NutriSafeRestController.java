@@ -44,6 +44,8 @@ public class NutriSafeRestController {
 
     private Utils helper;
 
+    private ArrayList<DeferredResult> pollRequests = new ArrayList<>();
+
     // bruteforce protection attributes
     private final HashMap<String, Integer> triesCount = new HashMap<>();
     private final HashMap<String, Long> lastTry = new HashMap<>();
@@ -81,22 +83,28 @@ public class NutriSafeRestController {
     }
 
     @PostMapping("/pollingResult")
-    DeferredResult<ResponseEntity<String>> test() {
-        DeferredResult<ResponseEntity<String>> deferredResult = new DeferredResult<>(100000L, Collections.emptyList());
+    DeferredResult<ResponseEntity<String>> pollingResult() {
+        DeferredResult<ResponseEntity<String>> deferredResult = new DeferredResult<>(Long.MAX_VALUE);
 
         ForkJoinPool.commonPool().submit(() -> {
             try {
+                pollRequests.add(deferredResult);
                 while(helper.getAlarmFlag() == null) {
                     Thread.sleep(1000);
-                    System.out.println("IN TRY");
                 }
             } catch (InterruptedException e) {
             }
-            System.out.println(helper.getAlarmFlag());
-            deferredResult.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
-            helper.resetAlarmFlag();
+            for(DeferredResult df : pollRequests){
+                df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
+            }
+            deferredResult.onCompletion(new Runnable() {
+                @Override
+                public void run() {
+                    helper.resetAlarmFlag();
+                    pollRequests.clear();
+                }
+            });
         });
-
         return deferredResult;
     }
 

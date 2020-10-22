@@ -61,7 +61,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('readAccept', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_readMetaDef', 'DEFAULT_READ_WHITELIST')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getUserInfo', '" + DEFAULT_READ_WHITELIST + "')");
-            jdbcTemplate.execute("insert into function(name, whitelist) values ('test', '" + DEFAULT_READ_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('pollingResult', '" + DEFAULT_READ_WHITELIST + "')");
             System.out.println("done!");
         }
         if(!whitelistExists(DEFAULT_WRITE_WHITELIST, jdbcTemplate)) {
@@ -76,6 +76,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('addRuleNameAndCondition', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteRuleForProduct', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('activateAlarm', '" + DEFAULT_WRITE_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('deactivateAlarm', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('exportDataToAuthPDC', '" + DEFAULT_WRITE_WHITELIST + "')");
             System.out.println("done!");
         }

@@ -14,6 +14,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -138,6 +139,7 @@ public class NutriSafeRestController {
                 return switch (function) {
                     case "createUser" -> createUser(bodyJson);
                     case "deleteUser" -> deleteUser(bodyJson);
+                    case "updatePassword" -> updatePassword(bodyJson);
                     case "setRole" -> setRole(bodyJson);
                     case "createWhitelist" -> createWhitelist(bodyJson);
                     case "deleteWhitelist" -> deleteWhitelist(bodyJson);
@@ -400,6 +402,22 @@ public class NutriSafeRestController {
             persistenceManager.insertUserToWhitelistEntry(username, whitelist);
             return ok(username + " created and linked to " + whitelist + ".");
         }
+    }
+    private ResponseEntity<?> updatePassword(JsonObject bodyJson) throws InvalidException {
+        String username = retrieveUsername(bodyJson, true, false);
+        String password = retrievePassword(bodyJson, true);
+        String newPassword = bodyJson.get("newPassword").toString().replace("\"", "");
+        if (newPassword != null && newPassword.length() < 8)
+            throw new InvalidException("Passwords must be at least 8 characters long.");
+        try{
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+            UserDetails user = userDetailsManager.loadUserByUsername(username);
+            userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(username,
+                    new BCryptPasswordEncoder().encode(newPassword), user.getAuthorities()));
+        } catch (BadCredentialsException e) {
+            return (ResponseEntity<?>) badRequest().body("Authentication Error");
+        }
+        return ok("password updated for user " + username);
     }
 
     private ResponseEntity<?> setRole(JsonObject bodyJson) throws InvalidException {

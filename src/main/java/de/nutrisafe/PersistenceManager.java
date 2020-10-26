@@ -51,6 +51,16 @@ public class PersistenceManager {
         return whitelists;
     }
 
+    List<String> selectUsersByAuthority(final String role) {
+        PreparedStatementCreator selectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select username from authorities where authority = ?");
+            preparedStatement.setString(1, role);
+            return preparedStatement;
+        };
+        List<String> users = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
+        return users;
+    }
+
     List<String> selectUserToWhitelistEntriesOfUser(final String username) {
         PreparedStatementCreator selectStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("select whitelist from user_to_whitelist where username = ?");

@@ -73,6 +73,7 @@ public class NutriSafeRestController {
                 case "getUserInfo" -> getUserInfo(user.getUsername());
                 case "getUserInfoOfUser" -> getUserInfo(args);
                 case "getWhitelists" -> getWhitelists();
+                case "getUsersByAuthority" -> getUsersByAuthority(args);
                 default -> hyperledgerGet(function, args);
             };
         } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
@@ -261,6 +262,15 @@ public class NutriSafeRestController {
         JsonObject response = new JsonObject();
         JsonArray usernames = new JsonArray();
         for (String username : persistenceManager.selectAllUsers())
+            usernames.add(username);
+        response.add("usernames", usernames);
+        return ok(response.toString());
+    }
+
+    private ResponseEntity<?> getUsersByAuthority(String[] args){
+        JsonObject response = new JsonObject();
+        JsonArray usernames = new JsonArray();
+        for(String username : persistenceManager.selectUsersByAuthority(args[0]))
             usernames.add(username);
         response.add("usernames", usernames);
         return ok(response.toString());
@@ -475,6 +485,11 @@ public class NutriSafeRestController {
                 role = ROLE_MEMBER;
         }
         return role;
+    }
+
+    public ResponseEntity<?> selectFromDatabase(){
+
+        return ok("");
     }
 
     /* Parsing body content */

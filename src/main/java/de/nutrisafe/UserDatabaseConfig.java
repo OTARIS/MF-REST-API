@@ -100,6 +100,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getUserInfoOfUser', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getWhitelists', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getAllUsers', '" + DEFAULT_ADMIN_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('getUsersByAuthority', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_deleteProduct', '" + DEFAULT_ADMIN_WHITELIST + "')");
 
             System.out.println("done!");

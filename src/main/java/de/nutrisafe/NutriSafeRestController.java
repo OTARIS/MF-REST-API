@@ -272,7 +272,7 @@ public class NutriSafeRestController {
         JsonArray usernames = new JsonArray();
         for(String username : persistenceManager.selectUsersByAuthority(args[0]))
             usernames.add(username);
-        response.add("usernames", usernames);
+        response.add("users", usernames);
         return ok(response.toString());
     }
 

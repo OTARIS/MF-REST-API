@@ -59,9 +59,30 @@ public class NutriSafeRestControllerTest {
     }
 
     @Test
-    public void testGetAllUsersSuccess() throws Exception {
+    public void testGetWhitelistsSuccess() throws Exception {
         String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
         this.mockMvc.perform(get("/get?function=getWhitelists").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+    }
+
+    @Test
+    public void testGetAllUsersSuccess() throws Exception {
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        this.mockMvc.perform(get("/get?function=getAllUsers").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+    }
+
+    @Test
+    public void testGetUsersByAuthoritySuccess() throws Exception {
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        this.mockMvc.perform(get("/get?function=getUsersByAuthority&args=ROLE_USER").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+    }
+
+    @Test
+    public void testGetUserInfoSuccess() throws Exception {
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        this.mockMvc.perform(get("/get?function=getUserInfo&args=admin").header("Authorization", "Bearer " + token)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
     }
 }

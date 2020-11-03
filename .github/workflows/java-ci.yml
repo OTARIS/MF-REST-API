@@ -6,6 +6,17 @@ jobs:
   build:
     runs-on: ubuntu-20.04
 
+    services:
+      postgres:
+        image: postgres:42.2.12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: GRm%m5cgTmw3S&kjxV
+          POSTGRES_DB: nutrisaferestdb
+        ports:
+          - 5432/tcp
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 14
@@ -14,3 +25,5 @@ jobs:
           java-version: 14
       - name: Build with Gradle
         run: ./gradlew build
+      -name: Run Tests
+        run: ./gradlew test

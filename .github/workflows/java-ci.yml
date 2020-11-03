@@ -25,5 +25,5 @@ jobs:
           java-version: 14
       - name: Build with Gradle
         run: ./gradlew build
-      -name: Run Tests
+      - name: Run Tests
         run: ./gradlew test

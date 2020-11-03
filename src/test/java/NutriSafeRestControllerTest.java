@@ -39,7 +39,7 @@ public class NutriSafeRestControllerTest {
     @Test
     public void testAuthFail() throws Exception{
         body.put("username", "nutriuser");
-        body.put("password", "12345678");
+        body.put("password", "");
         Gson gson = new Gson();
         String json = gson.toJson(body);
         String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_USER"));

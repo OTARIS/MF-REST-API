@@ -37,7 +37,7 @@ public class NutriSafeRestControllerTest {
     }
 
     @Test
-    public void testAuthFail() throws Exception{
+    public void authenticationFail_wrongCredentials() throws Exception{
         body.put("username", "nutriuser");
         body.put("password", "");
         Gson gson = new Gson();
@@ -45,10 +45,12 @@ public class NutriSafeRestControllerTest {
         String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_USER"));
         mockMvc.perform(post("/auth").header("Authorization", "Bearer " + token).content(json)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+
     }
 
     @Test
-    public void testAuthSuccess() throws Exception{
+    public void authenticationSuccess() throws Exception{
         body.put("username", "admin");
         body.put("password", "12345678");
         Gson gson = new Gson();
@@ -56,33 +58,112 @@ public class NutriSafeRestControllerTest {
         String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
         mockMvc.perform(post("/auth").header("Authorization", "Bearer " + token).content(json)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        body.clear();
     }
 
     @Test
-    public void testGetWhitelistsSuccess() throws Exception {
+    public void getWhitelistsSuccess() throws Exception {
         String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
         this.mockMvc.perform(get("/get?function=getWhitelists").header("Authorization", "Bearer " + token)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
     }
 
     @Test
-    public void testGetAllUsersSuccess() throws Exception {
+    public void getWhitelistsFail_wrongAuthority() throws Exception {
+        String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_MEMBER"));
+        this.mockMvc.perform(get("/get?function=getWhitelists").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    public void getAllUsersSuccess() throws Exception {
         String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
         this.mockMvc.perform(get("/get?function=getAllUsers").header("Authorization", "Bearer " + token)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
     }
 
     @Test
-    public void testGetUsersByAuthoritySuccess() throws Exception {
+    public void getAllUsersFail_wrongAuthority() throws Exception {
+        String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_MEMBER"));
+        this.mockMvc.perform(get("/get?function=getAllUsers").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    public void getUsersByAuthoritySuccess() throws Exception {
         String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
         this.mockMvc.perform(get("/get?function=getUsersByAuthority&args=ROLE_USER").header("Authorization", "Bearer " + token)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
     }
 
     @Test
-    public void testGetUserInfoSuccess() throws Exception {
+    public void getUsersByAuthorityFail_wrongAuthority() throws Exception {
+        String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_MEMBER"));
+        this.mockMvc.perform(get("/get?function=getUsersByAuthority&args=ROLE_USER").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    public void getUserInfoOfUserSuccess() throws Exception {
         String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
-        this.mockMvc.perform(get("/get?function=getUserInfo&args=admin").header("Authorization", "Bearer " + token)
+        this.mockMvc.perform(get("/get?function=getUserInfoOfUser&args=admin").header("Authorization", "Bearer " + token)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+    }
+
+    @Test
+    public void getUserInfoFail_wrongAuthority() throws Exception {
+        String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_MEMBER"));
+        this.mockMvc.perform(get("/get?function=getUserInfoOfUser&args=admin").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    public void createAndDeleteWhitelistSuccess() throws Exception {
+        body.put("whitelist", "TEST_WHITELIST");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=createWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        mockMvc.perform(post("/submit?function=deleteWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        body.clear();
+    }
+
+    @Test
+    public void createWhitelistFail_wrongAuthority() throws Exception {
+        body.put("whitelist", "TEST_WHITELIST");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_MEMBER"));
+        mockMvc.perform(post("/submit?function=createWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void deleteWhitelistFail_wrongAuthority() throws Exception {
+        body.put("whitelist", "DEFAULT_READ_WHITELIST");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_MEMBER"));
+        mockMvc.perform(post("/submit?function=deleteWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void createAndDeleteUserSuccess() throws Exception {
+        body.put("username", "testuser");
+        body.put("password", "12345678");
+        body.put("role", "ROLE_MEMBER");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=createUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        mockMvc.perform(post("/submit?function=deleteUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        body.clear();
     }
 }

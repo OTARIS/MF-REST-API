@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.Collections;
@@ -31,27 +32,21 @@ public class NutriSafeRestControllerTest {
 
     private HashMap<Object, Object> body = new HashMap<>();
 
-    @Before
-    public void setup() {
-        this.mockMvc = standaloneSetup(new NutriSafeRestController()).build();
-    }
-
     @Test
     public void authenticationFail_wrongCredentials() throws Exception{
-        body.put("username", "nutriuser");
-        body.put("password", "");
+        body.put("username", "testuser");
+        body.put("password", "1234");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_USER"));
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
         mockMvc.perform(post("/auth").header("Authorization", "Bearer " + token).content(json)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
         body.clear();
-
     }
 
     @Test
     public void authenticationSuccess() throws Exception{
-        body.put("username", "admin");
+        body.put("username", "nutriuser");
         body.put("password", "12345678");
         Gson gson = new Gson();
         String json = gson.toJson(body);
@@ -153,6 +148,68 @@ public class NutriSafeRestControllerTest {
     }
 
     @Test
+    public void linkAndUnlinkUserWhitelistSuccess() throws Exception {
+        body.put("username", "nutriuser");
+        body.put("whitelist", "DEFAULT_ADMIN_WHITELIST");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=linkUserToWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        body.clear();
+    }
+
+    @Test
+    public void linkUserToWhitelistFail_alreadyLinked() throws Exception {
+        body.put("username", "nutriuser");
+        body.put("whitelist", "DEFAULT_WRITE_WHITELIST");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=linkUserToWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void linkUserToWhitelistFail_wlDoesNotExist() throws Exception {
+        body.put("username", "nutriuser");
+        body.put("whitelist", "TEST_WHITELIST1234");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=linkUserToWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void unlinkUserFromWhitelistFail_alreadyUnlinked() throws Exception {
+        body.put("username", "nutriuser");
+        body.put("whitelist", "DEFAULT_ADMIN_WHITELIST");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void unlinkUserFromWhitelistFail_wlDoesNotExist() throws Exception {
+        body.put("username", "nutriuser");
+        body.put("whitelist", "TEST_WHITELIST1234");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
     public void createAndDeleteUserSuccess() throws Exception {
         body.put("username", "testuser");
         body.put("password", "12345678");
@@ -166,4 +223,104 @@ public class NutriSafeRestControllerTest {
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
         body.clear();
     }
+
+    @Test
+    public void createAndDeleteUserFail_wrongAuthority() throws Exception {
+        body.put("username", "testuser");
+        body.put("password", "12345678");
+        body.put("role", "ROLE_MEMBER");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("nutriuser", Collections.singletonList("ROLE_MEMBER"));
+        mockMvc.perform(post("/submit?function=createUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        mockMvc.perform(post("/submit?function=deleteUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void createUserFail_roleError() throws Exception {
+        body.put("username", "testuser");
+        body.put("password", "12345678");
+        body.put("role", "NO_ROLE");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=createUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void createUserFail_userExists() throws Exception {
+        body.put("username", "admin");
+        body.put("password", "12345678");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=createUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void createUserFail_shortPwd() throws Exception {
+        body.put("username", "testuser");
+        body.put("password", "1234");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=createUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void createUserFail_whitelistDoesNotExist() throws Exception {
+        body.put("username", "testuser");
+        body.put("password", "12345678");
+        body.put("whitelist", "TEST_WHITELIST1234");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=createUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        body.clear();
+    }
+
+    @Test
+    public void setRoleSuccess() throws Exception {
+        body.put("username", "nutriuser");
+        body.put("role", "ROLE_ADMIN");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=setRole").header("Authorization", "Bearer " + token)
+                .content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        body.clear();
+        body.put("username", "nutriuser");
+        body.put("role", "ROLE_MEMBER");
+        json = gson.toJson(body);
+        mockMvc.perform(post("/submit?function=setRole").header("Authorization", "Bearer " + token)
+                .content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+        body.clear();
+    }
+
+    @Test
+    public void setRoleFail_alreadySet() throws Exception {
+        body.put("username", "nutriuser");
+        body.put("role", "ROLE_MEMBER");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
+        mockMvc.perform(post("/submit?function=setRole").header("Authorization", "Bearer " + token)
+                .content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isBadRequest());
+        body.clear();
+    }
+
+
 }

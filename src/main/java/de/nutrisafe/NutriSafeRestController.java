@@ -487,11 +487,6 @@ public class NutriSafeRestController {
         return role;
     }
 
-    public ResponseEntity<?> selectFromDatabase(){
-
-        return ok("");
-    }
-
     /* Parsing body content */
 
     private String retrieveFunction(JsonObject bodyJson, boolean required) throws InvalidException {

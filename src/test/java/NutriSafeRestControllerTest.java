@@ -326,5 +326,77 @@ public class NutriSafeRestControllerTest {
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isBadRequest());
     }
 
+    @Test
+    public void updatePasswordSuccess() throws Exception {
+        body.put("username", username);
+        body.put("password", password);
+        body.put("newPassword", "87654321");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
+        mockMvc.perform(post("/submit?function=updatePassword")
+                .header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+    }
 
+    @Test
+    public void updatePasswordFail_authenticationError() throws Exception {
+        body.put("username", username);
+        body.put("password", "11111111");
+        body.put("newPassword", "87654321");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
+        mockMvc.perform(post("/submit?function=updatePassword")
+                .header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    public void linkFunctionToWhitelistSuccess() throws Exception {
+        body.put("whitelist", whitelist);
+        body.put("function", "createObject");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        mockMvc.perform(post("/submit?function=linkFunctionToWhitelist")
+                .header("Authorization", "Bearer " + this.token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+    }
+
+    @Test
+    @Sql("classpath:test_init.sql")
+    @Sql("classpath:function_to_whitelist.sql")
+    public void linkFunctionToWhitelist_alreadyLinked() throws Exception {
+        body.put("whitelist", whitelist);
+        body.put("function", "createObject");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        mockMvc.perform(post("/submit?function=linkFunctionToWhitelist")
+                .header("Authorization", "Bearer " + this.token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @Sql("classpath:test_init.sql")
+    @Sql("classpath:function_to_whitelist.sql")
+    public void unlinkFunctionFromWhitelistSuccess() throws Exception {
+        body.put("whitelist", whitelist);
+        body.put("function", "createObject");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        mockMvc.perform(post("/submit?function=unlinkFunctionFromWhitelist")
+                .header("Authorization", "Bearer " + this.token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+    }
+
+    @Test
+    public void unlinkFunctionFromWhitelistFail_alreadyUnlinked() throws Exception {
+        body.put("whitelist", whitelist);
+        body.put("function", "createObject");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        mockMvc.perform(post("/submit?function=unlinkFunctionFromWhitelist")
+                .header("Authorization", "Bearer " + this.token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+    }
 }

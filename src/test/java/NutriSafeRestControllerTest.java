@@ -45,7 +45,6 @@ public class NutriSafeRestControllerTest {
     public void init() {
         // create token
         token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
-
         // create test user data
         username = "testUser";
         whitelist = "TEST_WHITELIST";

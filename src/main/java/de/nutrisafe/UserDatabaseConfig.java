@@ -59,8 +59,9 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('privateObjectExists', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('readObject', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('readAccept', '" + DEFAULT_READ_WHITELIST + "')");
-            jdbcTemplate.execute("insert into function(name, whitelist) values ('META_readMetaDef', 'DEFAULT_READ_WHITELIST')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('META_readMetaDef', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getUserInfo', '" + DEFAULT_READ_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('updatePassword', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('pollingResult', '" + DEFAULT_READ_WHITELIST + "')");
             System.out.println("done!");
         }
@@ -89,7 +90,6 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_addUnit', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('createUser', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteUser', '" + DEFAULT_ADMIN_WHITELIST + "')");
-            jdbcTemplate.execute("insert into function(name, whitelist) values ('updatePassword', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('setRole', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('createWhitelist', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteWhitelist', '" + DEFAULT_ADMIN_WHITELIST + "')");

@@ -1,3 +1,12 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.owasp:dependency-check-gradle:6.0.3'
+    }
+}
+
 plugins {
     id 'org.springframework.boot' version '2.3.0.RELEASE'
     id 'io.spring.dependency-management' version '1.0.9.RELEASE'
@@ -12,6 +21,9 @@ sourceCompatibility = '14'
 repositories {
     mavenCentral()
 }
+
+apply plugin: 'org.owasp.dependencycheck'
+
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

@@ -2,6 +2,7 @@ import com.google.gson.Gson;
 import de.nutrisafe.NutriSafeRestController;
 import de.nutrisafe.UserDatabaseConfig;
 import de.nutrisafe.jwt.JwtTokenProvider;
+import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,10 +16,13 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.HashMap;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -62,9 +66,12 @@ public class NutriSafeRestControllerTest {
         body.put("password", password);
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/auth")
+        String result = mockMvc.perform(post("/auth")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -73,65 +80,92 @@ public class NutriSafeRestControllerTest {
         body.put("password", password);
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/auth")
+        String result = mockMvc.perform(post("/auth")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
     public void getWhitelistsSuccess() throws Exception {
-        this.mockMvc.perform(get("/get?function=getWhitelists")
+        String result = mockMvc.perform(get("/get?function=getWhitelists")
                 .header("Authorization", "Bearer " + this.token)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
     public void getWhitelistsFail_wrongAuthority() throws Exception {
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
-        this.mockMvc.perform(get("/get?function=getWhitelists").header("Authorization", "Bearer " + token)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        String result = mockMvc.perform(get("/get?function=getWhitelists").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
     public void getAllUsersSuccess() throws Exception {
-        this.mockMvc.perform(get("/get?function=getAllUsers")
+        String result = mockMvc.perform(get("/get?function=getAllUsers")
                 .header("Authorization", "Bearer " + this.token)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
     public void getAllUsersFail_wrongAuthority() throws Exception {
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
-        this.mockMvc.perform(get("/get?function=getAllUsers").header("Authorization", "Bearer " + token)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        String result = mockMvc.perform(get("/get?function=getAllUsers").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
     public void getUsersByAuthoritySuccess() throws Exception {
-        this.mockMvc.perform(get("/get?function=getUsersByAuthority&args=ROLE_USER")
+        String result = mockMvc.perform(get("/get?function=getUsersByAuthority&args=ROLE_USER")
                 .header("Authorization", "Bearer " + this.token)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
     public void getUsersByAuthorityFail_wrongAuthority() throws Exception {
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
-        this.mockMvc.perform(get("/get?function=getUsersByAuthority&args=ROLE_USER").header("Authorization", "Bearer " + token)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        String result = mockMvc.perform(get("/get?function=getUsersByAuthority&args=ROLE_USER").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
     public void getUserInfoOfUserSuccess() throws Exception {
-        this.mockMvc.perform(get("/get?function=getUserInfoOfUser&args=admin")
+        String result = mockMvc.perform(get("/get?function=getUserInfoOfUser&args=admin")
                 .header("Authorization", "Bearer " + this.token)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
     public void getUserInfoFail_wrongAuthority() throws Exception {
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
-        this.mockMvc.perform(get("/get?function=getUserInfoOfUser&args=admin").header("Authorization", "Bearer " + token)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        String result = mockMvc.perform(get("/get?function=getUserInfoOfUser&args=admin").header("Authorization", "Bearer " + token)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -153,19 +187,24 @@ public class NutriSafeRestControllerTest {
         Gson gson = new Gson();
         String json = gson.toJson(body);
         String token = jwtTokenProvider.createToken("testUser", Collections.singletonList("ROLE_MEMBER"));
-        mockMvc.perform(post("/submit?function=createWhitelist").header("Authorization", "Bearer " + token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        String result = mockMvc.perform(post("/submit?function=createWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
-    //TODO:
     @Test
     public void deleteWhitelistFail_wrongAuthority() throws Exception {
         body.put("whitelist", whitelist);
         Gson gson = new Gson();
         String json = gson.toJson(body);
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
-        mockMvc.perform(post("/submit?function=deleteWhitelist").header("Authorization", "Bearer " + token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        String result = mockMvc.perform(post("/submit?function=deleteWhitelist").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -174,12 +213,18 @@ public class NutriSafeRestControllerTest {
         body.put("whitelist", whitelist);
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=linkUserToWhitelist")
+        String result = mockMvc.perform(post("/submit?function=linkUserToWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
-        mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist")
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
+        result = mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -190,9 +235,12 @@ public class NutriSafeRestControllerTest {
         body.put("whitelist", whitelist);
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=linkUserToWhitelist")
+        String result = mockMvc.perform(post("/submit?function=linkUserToWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -201,9 +249,12 @@ public class NutriSafeRestControllerTest {
         body.put("whitelist", "NO_WHITELIST");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=linkUserToWhitelist")
+        String result = mockMvc.perform(post("/submit?function=linkUserToWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -212,9 +263,12 @@ public class NutriSafeRestControllerTest {
         body.put("whitelist", whitelist);
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist")
+        String result = mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -223,9 +277,12 @@ public class NutriSafeRestControllerTest {
         body.put("whitelist", "NO_WHITELIST");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist")
+        String result = mockMvc.perform(post("/submit?function=unlinkUserFromWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -235,12 +292,18 @@ public class NutriSafeRestControllerTest {
         body.put("role", "ROLE_MEMBER");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=createUser")
+        String result = mockMvc.perform(post("/submit?function=createUser")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
-        mockMvc.perform(post("/submit?function=deleteUser")
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
+        result = mockMvc.perform(post("/submit?function=deleteUser")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -251,10 +314,16 @@ public class NutriSafeRestControllerTest {
         Gson gson = new Gson();
         String json = gson.toJson(body);
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
-        mockMvc.perform(post("/submit?function=createUser").header("Authorization", "Bearer " + token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
-        mockMvc.perform(post("/submit?function=deleteUser").header("Authorization", "Bearer " + token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+        String result = mockMvc.perform(post("/submit?function=createUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
+        result = mockMvc.perform(post("/submit?function=deleteUser").header("Authorization", "Bearer " + token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -264,9 +333,12 @@ public class NutriSafeRestControllerTest {
         body.put("role", "NO_ROLE");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=createUser")
+        String result = mockMvc.perform(post("/submit?function=createUser")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -275,9 +347,12 @@ public class NutriSafeRestControllerTest {
         body.put("password", password);
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=createUser")
+        String result = mockMvc.perform(post("/submit?function=createUser")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -286,9 +361,12 @@ public class NutriSafeRestControllerTest {
         body.put("password", "1234");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=createUser")
+        String result = mockMvc.perform(post("/submit?function=createUser")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -298,9 +376,12 @@ public class NutriSafeRestControllerTest {
         body.put("whitelist", "NO_WHITELIST");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=createUser")
+        String result = mockMvc.perform(post("/submit?function=createUser")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -309,10 +390,13 @@ public class NutriSafeRestControllerTest {
         body.put("role", "ROLE_ADMIN");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=setRole")
+        String result = mockMvc.perform(post("/submit?function=setRole")
                 .header("Authorization", "Bearer " + this.token)
                 .content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -321,9 +405,12 @@ public class NutriSafeRestControllerTest {
         body.put("role", "ROLE_MEMBER");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=setRole")
+        String result = mockMvc.perform(post("/submit?function=setRole")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isBadRequest());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isBadRequest())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -334,9 +421,12 @@ public class NutriSafeRestControllerTest {
         Gson gson = new Gson();
         String json = gson.toJson(body);
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
-        mockMvc.perform(post("/submit?function=updatePassword")
+        String result = mockMvc.perform(post("/submit?function=updatePassword")
                 .header("Authorization", "Bearer " + token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -347,9 +437,12 @@ public class NutriSafeRestControllerTest {
         Gson gson = new Gson();
         String json = gson.toJson(body);
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
-        mockMvc.perform(post("/submit?function=updatePassword")
+        String result = mockMvc.perform(post("/submit?function=updatePassword")
                 .header("Authorization", "Bearer " + token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -358,9 +451,12 @@ public class NutriSafeRestControllerTest {
         body.put("function", "createObject");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=linkFunctionToWhitelist")
+        String result = mockMvc.perform(post("/submit?function=linkFunctionToWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -371,9 +467,12 @@ public class NutriSafeRestControllerTest {
         body.put("function", "createObject");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=linkFunctionToWhitelist")
+        String result = mockMvc.perform(post("/submit?function=linkFunctionToWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -384,9 +483,12 @@ public class NutriSafeRestControllerTest {
         body.put("function", "createObject");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=unlinkFunctionFromWhitelist")
+        String result = mockMvc.perform(post("/submit?function=unlinkFunctionFromWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 
     @Test
@@ -395,8 +497,54 @@ public class NutriSafeRestControllerTest {
         body.put("function", "createObject");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        mockMvc.perform(post("/submit?function=unlinkFunctionFromWhitelist")
+        String result = mockMvc.perform(post("/submit?function=unlinkFunctionFromWhitelist")
                 .header("Authorization", "Bearer " + this.token).content(json)
-                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError());
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
+    }
+
+    @Test
+    public void selectDatabaseSuccess() throws Exception {
+        String[] colData = {"username", "password"};
+        body.put("columns", colData);
+        body.put("tableName", "users");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String result = mockMvc.perform(post("/select?function=selectDatabase")
+                .header("Authorization", "Bearer " + this.token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
+    }
+
+    @Test
+    public void selectDatabaseFail_missingAttribute() throws Exception {
+        body.put("tableName", "users");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String result = mockMvc.perform(post("/select?function=selectDatabase")
+                .header("Authorization", "Bearer " + this.token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
+    }
+
+    @Test
+    public void selectDatabaseFail_wrongAttribute() throws Exception {
+        String[] colData = {"uname", "password"};
+        body.put("columns", colData);
+        body.put("tableName", "users");
+        Gson gson = new Gson();
+        String json = gson.toJson(body);
+        String result = mockMvc.perform(post("/select?function=selectDatabase")
+                .header("Authorization", "Bearer " + this.token).content(json)
+                .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
+                .andDo(print()).andReturn().getResponse().getContentAsString();
+        Assert.assertNotNull(result);
+        System.out.println(result);
     }
 }

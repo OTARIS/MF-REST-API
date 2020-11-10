@@ -63,6 +63,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getUserInfo', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('updatePassword', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('pollingResult', '" + DEFAULT_READ_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('selectChaincode', '" + DEFAULT_READ_WHITELIST + "')");
             System.out.println("done!");
         }
         if(!whitelistExists(DEFAULT_WRITE_WHITELIST, jdbcTemplate)) {
@@ -101,6 +102,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getWhitelists', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getAllUsers', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getUsersByAuthority', '" + DEFAULT_ADMIN_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('selectDatabase', '" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_deleteProduct', '" + DEFAULT_ADMIN_WHITELIST + "')");
 
             System.out.println("done!");

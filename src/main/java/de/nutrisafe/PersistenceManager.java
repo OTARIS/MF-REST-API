@@ -61,6 +61,10 @@ public class PersistenceManager {
         return users;
     }
 
+    List<Map<String,Object>> selectFromDatabase(String cols, String tableName) {
+        return jdbcTemplate.queryForList("select " + cols + " from " + tableName);
+    }
+
     List<String> selectUserToWhitelistEntriesOfUser(final String username) {
         PreparedStatementCreator selectStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("select whitelist from user_to_whitelist where username = ?");

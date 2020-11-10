@@ -25,7 +25,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
-
+import com.google.gson.stream.MalformedJsonException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -111,12 +111,51 @@ public class NutriSafeRestController {
     }
 
     @PostMapping(value = "/select", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> select(@RequestBody String body) {
+    public ResponseEntity<?> select(@RequestParam String function, @RequestBody String body) {
         try {
             UserDetails user = persistenceManager.getCurrentUser();
             if (user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
-            JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
+            else {
+                JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
+                return switch (function) {
+                    case "selectChaincode" -> selectChaincode(bodyJson);
+                    case "selectDatabase" -> selectDatabase(bodyJson);
+                    default -> throw new IllegalStateException("Unexpected value: " + function);
+                };
+            }
+        } catch (RequiredException | UsernameNotFoundException e) {
+            return badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return badRequest().build();
+        }
+    }
+
+    private ResponseEntity<?> selectDatabase(JsonObject bodyJson) throws InvalidException {
+        try {
+            if (bodyJson.has("columns") && bodyJson.has("tableName")) {
+                List<Map<String, Object>> result;
+                String cols = "";
+                String tableName = bodyJson.get("tableName").toString();
+                JsonArray jsonArray = bodyJson.getAsJsonArray("columns");
+                for (int i = 0; i < jsonArray.size(); i++) {
+                    cols += jsonArray.get(i).toString();
+                    if (i + 1 < jsonArray.size()) cols += ", ";
+                }
+                result = persistenceManager.selectFromDatabase(cols, tableName);
+                return ok(result);
+            }
+            else return badRequest().body("Column(s) and table name are required");
+        }
+        catch(Exception e){
+            return badRequest().body("Error in request attributes");
+        }
+    }
+
+
+    private ResponseEntity<?> selectChaincode(JsonObject bodyJson) {
+        try {
             String[] args = {bodyJson.toString()};
             String response = getHelper().evaluateTransaction("queryChaincodeByQueryString", args);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();

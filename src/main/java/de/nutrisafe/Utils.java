@@ -111,11 +111,11 @@ public class Utils {
         String ret = "";
         try {
             Contract contract = prepareTransaction();
+            if(contract == null) throw new IOException();
 
             //Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
             Consumer<ContractEvent> listener = contract.addContractListener(this::alarmActivated);
 
-            if(contract == null) throw new IOException();
             final byte[] result;
             if (pArgs.size() == 0){
                 result = contract.createTransaction(function)
@@ -129,8 +129,8 @@ public class Utils {
             ret = new String(result, UTF_8);
 
         } catch (IOException | TimeoutException | ContractException | InterruptedException e) {
+            System.err.println("[NutriSafe REST API] Could not submit the transaction.");
             e.printStackTrace();
-            System.out.println(e);
         }
         return ret;
     }
@@ -151,8 +151,8 @@ public class Utils {
             ret = new String(result, UTF_8);
 
         } catch (IOException | ContractException e) {
+            System.err.println("[NutriSafe REST API] Could not evaluate the transaction.");
             e.printStackTrace();
-            System.out.println(e);
         }
         return ret;
     }

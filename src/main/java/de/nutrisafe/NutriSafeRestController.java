@@ -25,7 +25,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
-import com.google.gson.stream.MalformedJsonException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,19 +93,17 @@ public class NutriSafeRestController {
                 while(helper.getAlarmFlag() == null) {
                     Thread.sleep(1000);
                 }
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
             }
             for(DeferredResult df : pollRequests){
                 df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
             }
-            deferredResult.onCompletion(new Runnable() {
-                @Override
-                public void run() {
-                    helper.resetAlarmFlag();
-                    pollRequests.clear();
-                }
+            deferredResult.onCompletion(() -> {
+                helper.resetAlarmFlag();
+                pollRequests.clear();
             });
         });
+
         return deferredResult;
     }
 
@@ -453,7 +450,7 @@ public class NutriSafeRestController {
         }
     }
     private ResponseEntity<?> updatePassword(JsonObject bodyJson) throws InvalidException {
-        String username = retrieveUsername(bodyJson, true, false);
+        String username = retrieveUsername(bodyJson, true, true);
         String password = retrievePassword(bodyJson, true);
         String newPassword = null;
         if(bodyJson.has("newPassword"))
@@ -473,7 +470,7 @@ public class NutriSafeRestController {
         } catch (BadCredentialsException e) {
             return badRequest().body("Authentication Error");
         }
-        return ok("password updated for user " + username);
+        return ok("Password updated for user " + username + ".");
     }
 
     private ResponseEntity<?> setRole(JsonObject bodyJson) throws InvalidException {

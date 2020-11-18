@@ -205,7 +205,7 @@ public class NutriSafeRestController {
             String username = retrieveUsername(jsonObject, true, true);
             String password = retrievePassword(jsonObject, true);
             // bruteforce protection
-            if (lastTry.get(username) != null
+            if (lastTry.get(username) != null && triesCount.get(username) != null
                     && lastTry.get(username) + 10000 < System.currentTimeMillis()
                     && triesCount.get(username) > 2)
                 return badRequest().body("Suspicious behavior detected. Please wait 10 seconds before trying again.");
@@ -219,7 +219,8 @@ public class NutriSafeRestController {
                 return ok(model);
             } catch (AuthenticationException e) {
                 // bruteforce protection: count unsuccessful attempts if they happen in less than 10 seconds
-                if (lastTry.get(username) != null && lastTry.get(username) + 10000 < System.currentTimeMillis())
+                if (lastTry.get(username) != null && triesCount.get(username) != null
+                        && lastTry.get(username) + 10000 < System.currentTimeMillis())
                     triesCount.put(username, triesCount.get(username) + 1);
                 else
                     triesCount.put(username, 0);

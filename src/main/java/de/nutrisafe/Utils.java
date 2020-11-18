@@ -25,7 +25,6 @@ public class Utils {
 
     private Config config;
     private Network network = null;
-    private Gateway gateway = null;
     private String alarmFlag = null;
 
     public Utils(Config config) {
@@ -95,7 +94,7 @@ public class Utils {
                         .identity(loadWallet(), config.getCompany())
                         .networkConfig(fileInputStream);
                 //.discovery(true);
-                gateway = builder.connect();
+                Gateway gateway = builder.connect();
 
                 network = gateway.getNetwork(config.getChannelName());
             }

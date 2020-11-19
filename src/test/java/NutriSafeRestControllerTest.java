@@ -416,8 +416,7 @@ public class NutriSafeRestControllerTest {
     @Test
     public void updatePasswordSuccess() throws Exception {
         body.put("username", username);
-        body.put("password", password);
-        body.put("newPassword", "87654321");
+        body.put("password", "87654321");
         Gson gson = new Gson();
         String json = gson.toJson(body);
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));
@@ -430,10 +429,9 @@ public class NutriSafeRestControllerTest {
     }
 
     @Test
-    public void updatePasswordFail_authenticationError() throws Exception {
+    public void updatePasswordFail_shortPwd() throws Exception {
         body.put("username", username);
-        body.put("password", "11111111");
-        body.put("newPassword", "87654321");
+        body.put("password", "1234");
         Gson gson = new Gson();
         String json = gson.toJson(body);
         String token = jwtTokenProvider.createToken(username, Collections.singletonList("ROLE_MEMBER"));

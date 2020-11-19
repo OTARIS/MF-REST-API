@@ -25,7 +25,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
-import com.google.gson.stream.MalformedJsonException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,19 +93,17 @@ public class NutriSafeRestController {
                 while(helper.getAlarmFlag() == null) {
                     Thread.sleep(1000);
                 }
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignored) {
             }
             for(DeferredResult df : pollRequests){
                 df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
             }
-            deferredResult.onCompletion(new Runnable() {
-                @Override
-                public void run() {
-                    helper.resetAlarmFlag();
-                    pollRequests.clear();
-                }
+            deferredResult.onCompletion(() -> {
+                helper.resetAlarmFlag();
+                pollRequests.clear();
             });
         });
+
         return deferredResult;
     }
 
@@ -205,7 +202,8 @@ public class NutriSafeRestController {
             String username = retrieveUsername(jsonObject, true, true);
             String password = retrievePassword(jsonObject, true);
             // bruteforce protection
-            if (lastTry.get(username) != null && triesCount.get(username) != null && lastTry.get(username) + 10000 < System.currentTimeMillis()
+            if (lastTry.get(username) != null && triesCount.get(username) != null
+                    && lastTry.get(username) + 10000 < System.currentTimeMillis()
                     && triesCount.get(username) > 2)
                 return badRequest().body("Suspicious behavior detected. Please wait 10 seconds before trying again.");
             try {
@@ -218,12 +216,11 @@ public class NutriSafeRestController {
                 return ok(model);
             } catch (AuthenticationException e) {
                 // bruteforce protection: count unsuccessful attempts if they happen in less than 10 seconds
-                if (lastTry.get(username) != null) {
-                    if (lastTry.get(username) + 10000 < System.currentTimeMillis())
-                        triesCount.put(username, triesCount.get(username));
-                    else
-                        triesCount.put(username, 0);
-                }
+                if (lastTry.get(username) != null && triesCount.get(username) != null
+                        && lastTry.get(username) + 10000 < System.currentTimeMillis())
+                    triesCount.put(username, triesCount.get(username) + 1);
+                else
+                    triesCount.put(username, 0);
                 lastTry.put(username, System.currentTimeMillis());
                 return badRequest().body("Wrong password.");
             }
@@ -453,7 +450,7 @@ public class NutriSafeRestController {
         }
     }
     private ResponseEntity<?> updatePassword(JsonObject bodyJson) throws InvalidException {
-        String username = retrieveUsername(bodyJson, true, false);
+        String username = retrieveUsername(bodyJson, true, true);
         String password = retrievePassword(bodyJson, true);
         try{
             UserDetails user = userDetailsManager.loadUserByUsername(username);
@@ -462,7 +459,7 @@ public class NutriSafeRestController {
         } catch (BadCredentialsException e) {
             return badRequest().body("Authentication Error");
         }
-        return ok("password updated for user " + username);
+        return ok("Password updated for user " + username + ".");
     }
 
     private ResponseEntity<?> setRole(JsonObject bodyJson) throws InvalidException {

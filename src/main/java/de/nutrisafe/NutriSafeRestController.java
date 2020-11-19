@@ -455,21 +455,10 @@ public class NutriSafeRestController {
     private ResponseEntity<?> updatePassword(JsonObject bodyJson) throws InvalidException {
         String username = retrieveUsername(bodyJson, true, false);
         String password = retrievePassword(bodyJson, true);
-        String newPassword = null;
-        if(bodyJson.has("newPassword"))
-            newPassword = bodyJson.get("newPassword").toString().replace("\"", "");
-
-        if(newPassword == null)
-            throw new RequiredException("Password required.");
-
-        if (newPassword.length() < 8)
-            throw new InvalidException("Passwords must be at least 8 characters long.");
-
         try{
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
             UserDetails user = userDetailsManager.loadUserByUsername(username);
             userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(username,
-                    new BCryptPasswordEncoder().encode(newPassword), user.getAuthorities()));
+                    new BCryptPasswordEncoder().encode(password), user.getAuthorities()));
         } catch (BadCredentialsException e) {
             return badRequest().body("Authentication Error");
         }

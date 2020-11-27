@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import de.nutrisafe.jwt.JwtTokenProvider;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -28,6 +29,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
@@ -274,7 +276,7 @@ public class NutriSafeRestController {
                 HashMap<String, String> pArgsMap = new Gson().fromJson(pArgs, new TypeToken<HashMap<String, String>>() {
                 }.getType());
                 for (Map.Entry<String, String> entry : pArgsMap.entrySet()) {
-                    pArgsByteMap.put(entry.getKey(), entry.getValue().getBytes());
+                    pArgsByteMap.put(entry.getKey(), entry.getValue().getBytes(UTF_8));
                 }
             }
             String response = getHelper().submitTransaction(function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
@@ -407,6 +409,7 @@ public class NutriSafeRestController {
         return ok().body(username + " deleted.");
     }
 
+    @SuppressFBWarnings({"SF_SWITCH_FALLTHROUGH", "SF_SWITCH_NO_DEFAULT"})
     private ResponseEntity<?> createUser(JsonObject bodyJson) throws InvalidException {
         String username = retrieveUsername(bodyJson, true, false);
         if (userDetailsManager.userExists(username))
@@ -461,7 +464,7 @@ public class NutriSafeRestController {
         }
         return ok("Password updated for user " + username + ".");
     }
-
+    @SuppressFBWarnings({"SF_SWITCH_FALLTHROUGH", "SF_SWITCH_NO_DEFAULT"})
     private ResponseEntity<?> setRole(JsonObject bodyJson) throws InvalidException {
         String username = retrieveUsername(bodyJson, true, true);
         String newRole = retrieveRole(bodyJson, true);
@@ -579,13 +582,13 @@ public class NutriSafeRestController {
 
     /* Custom Exceptions */
 
-    private class RequiredException extends RuntimeException {
+    private static class RequiredException extends RuntimeException {
         RequiredException(String msg) {
             super(msg);
         }
     }
 
-    private class InvalidException extends Exception {
+    private static class InvalidException extends Exception {
         InvalidException(String msg) {
             super(msg);
         }

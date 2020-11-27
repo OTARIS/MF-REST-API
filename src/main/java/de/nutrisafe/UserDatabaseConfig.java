@@ -1,5 +1,6 @@
 package de.nutrisafe;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
+@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
 public class UserDatabaseConfig {
 
     public final static String DEFAULT_ADMIN_WHITELIST = "DEFAULT_ADMIN_WHITELIST";
@@ -189,6 +191,7 @@ public class UserDatabaseConfig {
     public UserDetailsManager userDetailsManager() {
         return new JdbcUserDetailsManager(dataSource());
     }
+
 
     private boolean whitelistExists(String whitelist, JdbcTemplate jdbcTemplate) {
         RowCountCallbackHandler countCallback = new RowCountCallbackHandler();

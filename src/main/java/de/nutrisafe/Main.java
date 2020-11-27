@@ -8,7 +8,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.lang.annotation.Retention;
 import java.util.Map;
 
 @SpringBootApplication(exclude={DataSourceAutoConfiguration.class})
@@ -16,11 +18,12 @@ import java.util.Map;
 //@ComponentScan(basePackages = {"de.nutrisafe"})
 public class Main implements WebMvcConfigurer {
 
-    public static String mspId = "DeoniMSP";
-    public static String connectionJson;
-    public static String privateKey;
-    public static String adminCert;
+    static String mspId = "DeoniMSP";
+    static String connectionJson;
+    static String privateKey;
+    static String adminCert;
 
+    @SuppressFBWarnings({"WMI_WRONG_MAP_ITERATOR", "SF_SWITCH_NO_DEFAULT"})
     public static void main(String[] args) {
         Map<String, String> env = System.getenv();
         for(String e : env.keySet()){

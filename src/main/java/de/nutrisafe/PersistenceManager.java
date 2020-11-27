@@ -1,5 +1,6 @@
 package de.nutrisafe;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.*;
@@ -16,6 +17,7 @@ import java.util.*;
 
 @Lazy
 @Service
+@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
 public class PersistenceManager {
 
     @Autowired
@@ -134,7 +136,13 @@ public class PersistenceManager {
     void deleteFunctionToWhitelistEntriesOfWhitelist(String whitelist) {
         PreparedStatementCreator functionDeleteStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("delete from function where whitelist = ?");
-            preparedStatement.setString(1, whitelist);
+            try {
+                preparedStatement.setString(1, whitelist);
+            }catch(Throwable t) {
+                try(preparedStatement) {
+                    throw t;
+                }
+            }
             return preparedStatement;
         };
         jdbcTemplate.update(functionDeleteStatement);
@@ -227,7 +235,7 @@ public class PersistenceManager {
 
     /* End of database checks */
 
-    private class SimpleStringRowMapper implements RowMapper<String> {
+    private static class SimpleStringRowMapper implements RowMapper<String> {
         @Override
         public String mapRow(ResultSet resultSet, int i) throws SQLException {
             return resultSet.getString(1);

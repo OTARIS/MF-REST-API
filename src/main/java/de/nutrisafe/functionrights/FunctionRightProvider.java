@@ -1,5 +1,6 @@
 package de.nutrisafe.functionrights;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
@@ -25,6 +26,7 @@ import java.sql.PreparedStatement;
 @Component
 @DependsOn("jdbcTemplate")
 @ComponentScan(basePackages = {"de.nutrisafe"})
+@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
 public class FunctionRightProvider {
 
     @Autowired

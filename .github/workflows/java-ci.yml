@@ -29,3 +29,5 @@ jobs:
         run: ./gradlew test
       - name: OWASP Dependency Check
         run: ./gradlew dependencyCheckAnalyze
+      - name: SpotBugs
+        run: ./gradlew check

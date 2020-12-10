@@ -1,6 +1,7 @@
 package de.nutrisafe;
 
 import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
 import org.apache.commons.io.IOUtils;
 import com.google.gson.JsonParser;
 import org.hyperledger.fabric.gateway.*;
@@ -80,15 +81,16 @@ public class Utils {
      * Setting up a connection to the "NutriSafe" Network.
      * @return returning the contract which is used for submitting or evaluate a transaction.
      */
-    private Contract prepareTransaction() {
+    private Contract prepareTransaction() throws IOException {
         Contract contract = null;
+        FileInputStream fileInputStream = null;
         try {
             /*
              * Preparing a builder for our Gateway.
              * .discovery(): Service discovery for all transaction submissions is enabled.
-            */
+             */
             if(network == null) {
-                FileInputStream fileInputStream = new FileInputStream(config.getNetworkConfigPath());
+                fileInputStream = new FileInputStream(config.getNetworkConfigPath());
                 //ClassPathResource classPathResource = new ClassPathResource(config.getNetworkConfigPath());
                 Gateway.Builder builder = Gateway.createBuilder()
                         .identity(loadWallet(), config.getCompany())
@@ -104,6 +106,11 @@ public class Utils {
             System.err.println("[NutriSafe REST API] Could not prepare the transaction.");
             e.printStackTrace();
         }
+        finally {
+            if(fileInputStream != null)
+                fileInputStream.close();
+
+        }
         return contract;
     }
 
@@ -114,7 +121,7 @@ public class Utils {
             if(contract == null) throw new IOException();
 
             //Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
-            Consumer<ContractEvent> listener = contract.addContractListener(this::alarmActivated);
+            contract.addContractListener(this::alarmActivated);
 
             final byte[] result;
             if (pArgs.size() == 0){

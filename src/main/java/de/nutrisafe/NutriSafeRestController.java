@@ -1,9 +1,6 @@
 package de.nutrisafe;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import de.nutrisafe.jwt.JwtTokenProvider;
 import org.apache.commons.io.IOUtils;
@@ -11,11 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -35,11 +33,14 @@ import static de.nutrisafe.UserDatabaseConfig.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.ResponseEntity.badRequest;
 import static org.springframework.http.ResponseEntity.ok;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Lazy
 @CrossOrigin()
 @RestController
 @DependsOn("jwtTokenProvider")
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class NutriSafeRestController {
 
     private Utils helper;
@@ -60,6 +61,13 @@ public class NutriSafeRestController {
     PersistenceManager persistenceManager;
     @Autowired
     UserDetailsManager userDetailsManager;
+
+    //ToDo: remove
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/message")
+    public String message() {
+        return "secret message";
+    }
 
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> get(@RequestParam String function, @RequestParam(required = false) String[] args) {

@@ -90,11 +90,12 @@ public class JwtTokenProvider {
         }
     }
 
+    //ToDo: remove client_id and secret
     public boolean checkOauthToken(String token){
         LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("token", token);
         WebClient webClient = WebClient.builder()
-                .defaultHeaders(header -> header.setBasicAuth("client1", "12345678"))
+                .defaultHeaders(header -> header.setBasicAuth("NutriSafe_Web_UI", "12345678"))
                 .build();
         HashMap response;
         try{

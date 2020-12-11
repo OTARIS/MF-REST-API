@@ -37,25 +37,25 @@
   },
   "orderers": {
     "orderer.unibw.de": {
-      "url": "grpcs://137.193.112.87:7050",
+      "url": "grpcs://127.0.0.1:7050",
       "grpcOptions": {
         "ssl-target-name-override": "orderer.unibw.de",
         "hostnameOverride": "orderer.unibw.de"
       },
       "tlsCACerts": {
-        "path": "C:\\NutriSafe\\Zertifikate\\orderer_tlsca_cert.crt"
+        "path": "/home/kathrin/git/Nutrisafe-REST-API/src/main/resources/orderer_tlsca_cert.crt"
       }
     }
   },
   "peers": {
     "peer0.deoni.de": {
-      "url": "grpcs://137.193.112.87:7051",
+      "url": "grpcs://127.0.0.1:7051",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.deoni.de",
         "hostnameOverride": "peer0.deoni.de"
       },
       "tlsCACerts": {
-        "path": "C:\\NutriSafe\\Zertifikate\\deoni_tlsca_cert.crt"
+        "path": "/home/kathrin/git/Nutrisafe-REST-API/src/main/resources/deoni_tlsca_cert.crt"
       }
     }
   }

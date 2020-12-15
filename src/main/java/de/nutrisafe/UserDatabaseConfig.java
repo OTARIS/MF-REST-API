@@ -65,6 +65,8 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('getUserInfo', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('updatePassword', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('pollingResult', '" + DEFAULT_READ_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('getPollingUsers', '" + DEFAULT_READ_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('removePollingUser', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('selectChaincode', '" + DEFAULT_READ_WHITELIST + "')");
             System.out.println("done!");
         }

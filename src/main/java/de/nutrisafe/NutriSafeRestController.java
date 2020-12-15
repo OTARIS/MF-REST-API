@@ -27,7 +27,6 @@ import org.springframework.web.context.request.async.DeferredResult;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
@@ -35,8 +34,6 @@ import static de.nutrisafe.UserDatabaseConfig.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.ResponseEntity.badRequest;
 import static org.springframework.http.ResponseEntity.ok;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Lazy
 @CrossOrigin()
@@ -47,7 +44,8 @@ public class NutriSafeRestController {
 
     private Utils helper;
 
-    private ArrayList<DeferredResult> pollRequests = new ArrayList<>();
+    private ArrayList<DeferredResult> pollingRequests = new ArrayList<>();
+    private Set<String> pollingUsers = new TreeSet<>();
 
     // bruteforce protection attributes
     private final HashMap<String, Integer> triesCount = new HashMap<>();
@@ -83,6 +81,8 @@ public class NutriSafeRestController {
                 case "getUserInfoOfUser" -> getUserInfo(args);
                 case "getWhitelists" -> getWhitelists();
                 case "getUsersByAuthority" -> getUsersByAuthority(args);
+                case "getPollingUsers" -> getPollingUsers();
+                case "removePollingUser" -> removePollingUser(args);
                 default -> hyperledgerGet(function, args);
             };
         } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
@@ -94,23 +94,27 @@ public class NutriSafeRestController {
     }
 
     @PostMapping("/pollingResult")
-    DeferredResult<ResponseEntity<String>> pollingResult() {
+    DeferredResult<ResponseEntity<String>> pollingResult(@RequestParam String user) {
         DeferredResult<ResponseEntity<String>> deferredResult = new DeferredResult<>(Long.MAX_VALUE);
-
         ForkJoinPool.commonPool().submit(() -> {
             try {
-                pollRequests.add(deferredResult);
+                pollingRequests.add(deferredResult);
+                pollingUsers.add(user);
                 while(helper.getAlarmFlag() == null) {
                     Thread.sleep(1000);
                 }
             } catch (InterruptedException ignored) {
             }
-            for(DeferredResult df : pollRequests){
-                df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
+            HashMap<String, String> result = new HashMap<>();
+            result.put("user", user);
+            result.put("product", helper.getAlarmFlag());
+            for(DeferredResult df : pollingRequests){
+                df.setResult(ResponseEntity.ok(result));
             }
             deferredResult.onCompletion(() -> {
                 helper.resetAlarmFlag();
-                pollRequests.clear();
+                pollingRequests.clear();
+                pollingUsers.remove(user);
             });
         });
 
@@ -302,6 +306,15 @@ public class NutriSafeRestController {
             return badRequest().body("REST API was unable to parse the key defs file for possible functions. " +
                     "Please contact the administrator.");
         }
+    }
+
+    private ResponseEntity<?> getPollingUsers(){
+        return ok(pollingUsers);
+    }
+
+    private ResponseEntity<?> removePollingUser(String[] user){
+        pollingUsers.remove(user[0]);
+        return ok(user[0] + " removed");
     }
 
     private ResponseEntity<?> getAllUsers() {

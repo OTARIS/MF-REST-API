@@ -95,11 +95,12 @@ public class NutriSafeRestController {
 
     @PostMapping("/pollingResult")
     DeferredResult<ResponseEntity<String>> pollingResult(@RequestParam String user) {
+        pollingUsers.add(user);
+        System.out.println("Registered Users: " + pollingUsers);
         DeferredResult<ResponseEntity<String>> deferredResult = new DeferredResult<>(Long.MAX_VALUE);
         ForkJoinPool.commonPool().submit(() -> {
             try {
                 pollingRequests.add(deferredResult);
-                pollingUsers.add(user);
                 while(helper.getAlarmFlag() == null) {
                     Thread.sleep(1000);
                 }
@@ -114,10 +115,10 @@ public class NutriSafeRestController {
             deferredResult.onCompletion(() -> {
                 helper.resetAlarmFlag();
                 pollingRequests.clear();
-                pollingUsers.remove(user);
+                //pollingUsers.remove(user);
             });
         });
-
+        System.out.println("Registered Users End: " + pollingUsers);
         return deferredResult;
     }
 

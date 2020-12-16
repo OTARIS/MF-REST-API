@@ -83,12 +83,17 @@ public class JwtTokenProvider {
             Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
             return !claims.getBody().getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-                if(checkOauthToken(token))
+            try {
+                if (checkOauthToken(token))
                     return true;
+            } catch (Exception e2) {
+                System.err.println("[NutriSafe REST API] Authorization Server Error");
+            }
             System.err.println("[NutriSafe REST API] Invalid JWT token");
             return false;
         }
     }
+
 
     public boolean checkOauthToken(String token){
         LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();

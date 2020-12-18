@@ -69,6 +69,20 @@ public class FunctionRightProvider {
             return preparedStatement;
         };
         jdbcTemplate.query(whitelistSelectStatement, countCallback);
+        if(!(countCallback.getRowCount() > 0)) {
+            countCallback = new RowCountCallbackHandler();
+            PreparedStatementCreator externalWhitelistSelectStatement = connection -> {
+                PreparedStatement preparedStatement = connection.prepareStatement("select * from " +
+                        "function, external_user_to_whitelist where " +
+                        "function.name = ? and " +
+                        "function.whitelist = external_user_to_whitelist.whitelist and " +
+                        "external_user_to_whitelist.username = ?");
+                preparedStatement.setString(1, function);
+                preparedStatement.setString(2, username);
+                return preparedStatement;
+            };
+            jdbcTemplate.query(externalWhitelistSelectStatement, countCallback);
+        }
         return countCallback.getRowCount() > 0;
     }
 

@@ -15,11 +15,16 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -33,6 +38,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
+import static de.nutrisafe.UserDatabaseConfig.*;
+
 @Lazy
 @Component
 @DependsOn("userDetailsService")
@@ -45,7 +52,13 @@ public class JwtTokenProvider {
     private long validityInMilliseconds = 3600000; // 1h
     @Autowired
     private UserDetailsService userDetailsService;
+    @Autowired
+    private UserDetailsManager userDetailsManager;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
     private String oauthUsername = null;
+    private boolean externalUser = false;
+    private int ttl;
 
     @PostConstruct
     protected void init() {
@@ -64,10 +77,41 @@ public class JwtTokenProvider {
                 .signWith(SignatureAlgorithm.HS256, secretKey)//
                 .compact();
     }
+    public UserDetails createOAuthUser(String name){
+        UserDetailsManager userDetailsManager = this.userDetailsManager;
+        if(!userDetailsManager.userExists(name)) {
+            List<GrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority(ROLE_USER));
+            authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
+            authorities.add(new SimpleGrantedAuthority(ROLE_ADMIN));
+            UserDetails user = new org.springframework.security.core.userdetails.User(name,
+                    "", authorities);
+            return user;
+        }
+        return null;
+    }
 
     public Authentication getAuthentication(String token) {
+        if(externalUser){
+            externalUser = false;
+            UserDetails user = createOAuthUser(oauthUsername);
+            jdbcTemplate.execute("insert into external_user_to_whitelist(username, whitelist) values ('" + oauthUsername + "', '" + DEFAULT_READ_WHITELIST + "')");
+            removeExternalUser(oauthUsername);
+            return new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities());
+        }
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(getUsername(token));
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+    }
+
+    public void removeExternalUser(String name){
+        Thread t = new Thread(() ->{
+            try {
+                Thread.sleep(ttl* 1000L);
+                jdbcTemplate.execute("delete from external_user_to_whitelist where username=" + name);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public String getUsername(String token) {
@@ -133,14 +177,21 @@ public class JwtTokenProvider {
         WebClient webClient = WebClient.builder()
                 //.defaultHeaders(header -> header.setBasicAuth("client1", "12345678"))
                 .build();
-        HashMap response = webClient.post().uri("https://oauth2.googleapis.com/tokeninfo?id_token=" + token)
-                .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
-                .exchange()
-                .block()
-                .bodyToMono(HashMap.class)
-                .block();
+        HashMap response;
+        try{
+            response = webClient.post().uri("https://oauth2.googleapis.com/tokeninfo?id_token=" + token)
+                    .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
+                    .exchange()
+                    .block()
+                    .bodyToMono(HashMap.class)
+                    .block();
+        }catch(NullPointerException e){
+            return false;
+        }
         if(response != null && response.containsKey("given_name")){
+            externalUser = true;
             oauthUsername = response.get("given_name").toString();
+            ttl = (int)response.get("exp") - (int)response.get("iat");
             System.err.println(response);
             return true;
         }

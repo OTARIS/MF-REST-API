@@ -58,7 +58,8 @@ public class JwtTokenProvider {
     private JdbcTemplate jdbcTemplate;
     private String oauthUsername = null;
     private boolean externalUser = false;
-    private int ttl;
+    private String exp;
+    HashMap<String, String> externalUsers = new HashMap<>();
 
     @PostConstruct
     protected void init() {
@@ -105,13 +106,18 @@ public class JwtTokenProvider {
 
     public void removeExternalUser(String name){
         Thread t = new Thread(() ->{
+            long now = System.currentTimeMillis();
+            long ttl = (Integer.parseInt(externalUsers.get(name))*1000L) - now;
+            System.out.println("ttl: " + ttl/1000L);
             try {
-                Thread.sleep(ttl* 1000L);
-                jdbcTemplate.execute("delete from external_user_to_whitelist where username=" + name);
+                Thread.sleep(ttl);
+                jdbcTemplate.execute("delete from external_user_to_whitelist where username=" + "'" + name + "'");
+                externalUsers.remove(name);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         });
+        t.start();
     }
 
     public String getUsername(String token) {
@@ -139,7 +145,7 @@ public class JwtTokenProvider {
                 }catch(Exception e2){
                     try{
                         System.err.println("Check Google Token");
-                        if(checkGoogleOauthTokenLocal(token))
+                        if(checkGoogleOauthToken(token))
                             return true;
                     }catch (Exception e3) {
                         System.err.println("[NutriSafe REST API] Authorization Server Error");
@@ -171,7 +177,7 @@ public class JwtTokenProvider {
         return false;
     }
 
-    public boolean checkGoogleOauthTokenLocal(String token){
+    public boolean checkGoogleOauthToken(String token){
         LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("token", token);
         WebClient webClient = WebClient.builder()
@@ -186,53 +192,17 @@ public class JwtTokenProvider {
                     .bodyToMono(HashMap.class)
                     .block();
         }catch(NullPointerException e){
+            e.getMessage();
             return false;
         }
         if(response != null && response.containsKey("given_name")){
             externalUser = true;
-            oauthUsername = response.get("given_name").toString();
-            ttl = (int)response.get("exp") - (int)response.get("iat");
+            oauthUsername = response.get("given_name").toString(); //TODO: set name differently
+            exp = response.get("exp").toString();
+            externalUsers.put(oauthUsername, exp);
             System.err.println(response);
             return true;
         }
         return false;
-    }
-
-
-    public boolean checkGoogleOauthToken(String token) throws GeneralSecurityException, IOException {
-        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new JacksonFactory())
-                // Specify the CLIENT_ID of the app that accesses the backend:
-                .setAudience(Collections.singletonList("786832729717-52js88aeghrh3fhv9cnib0apf5grb56o.apps.googleusercontent.com")) //TODO: remove
-                // Or, if multiple clients access the backend:
-                //.setAudience(Arrays.asList(CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3))
-                .build();
-
-        // (Receive idTokenString by HTTPS POST)
-
-        GoogleIdToken idToken = verifier.verify(token);
-        System.out.println("ID_TOKEN: " + idToken);
-        if (idToken != null) {
-            GoogleIdToken.Payload payload = idToken.getPayload();
-
-            // Print user identifier
-            String userId = payload.getSubject();
-            System.out.println("User ID: " + userId);
-
-            // Get profile information from payload
-            String email = payload.getEmail();
-            boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
-            String name = (String) payload.get("name");
-            String pictureUrl = (String) payload.get("picture");
-            String locale = (String) payload.get("locale");
-            String familyName = (String) payload.get("family_name");
-            String givenName = (String) payload.get("given_name");
-            return true;
-            // Use or store profile information
-            // ...
-
-        }
-        System.out.println("Invalid ID token.");
-        return false;
-
     }
 }

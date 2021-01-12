@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -83,8 +84,6 @@ public class JwtTokenProvider {
         if(!userDetailsManager.userExists(name)) {
             List<GrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
-            authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
-            authorities.add(new SimpleGrantedAuthority(ROLE_ADMIN));
             UserDetails user = new org.springframework.security.core.userdetails.User(name,
                     "", authorities);
             return user;
@@ -96,8 +95,15 @@ public class JwtTokenProvider {
         if(externalUser){
             externalUser = false;
             UserDetails user = createOAuthUser(oauthUsername);
-            jdbcTemplate.execute("insert into external_user_to_whitelist(username, whitelist) values ('" + oauthUsername + "', '" + DEFAULT_READ_WHITELIST + "')");
-            removeExternalUser(oauthUsername);
+            int exists = 0;
+            try {
+                exists = jdbcTemplate.queryForObject("SELECT 1 FROM external_user_to_whitelist WHERE username = ? LIMIT 1", new Object[]{oauthUsername}, Integer.class);
+                System.out.println(exists);
+            }catch(EmptyResultDataAccessException | NullPointerException ignored){}
+            if(exists == 0) {
+                jdbcTemplate.execute("insert into external_user_to_whitelist(username, whitelist) values ('" + oauthUsername + "', '" + DEFAULT_READ_WHITELIST + "')");
+                removeExternalUser(oauthUsername);
+            }
             return new UsernamePasswordAuthenticationToken(user, "", user.getAuthorities());
         }
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(getUsername(token));

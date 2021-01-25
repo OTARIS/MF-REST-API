@@ -44,7 +44,7 @@ public class NutriSafeRestController {
 
     private Utils helper;
 
-    private ArrayList<DeferredResult> pollRequests = new ArrayList<>();
+    private final ArrayList<DeferredResult<ResponseEntity<String>>> pollRequests = new ArrayList<>();
 
     // bruteforce protection attributes
     private final HashMap<String, Integer> triesCount = new HashMap<>();
@@ -104,7 +104,7 @@ public class NutriSafeRestController {
                 }
             } catch (InterruptedException ignored) {
             }
-            for(DeferredResult df : pollRequests){
+            for(DeferredResult<ResponseEntity<String>> df : pollRequests){
                 df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
             }
             deferredResult.onCompletion(() -> {

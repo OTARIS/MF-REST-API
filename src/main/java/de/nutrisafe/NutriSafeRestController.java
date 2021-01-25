@@ -27,7 +27,6 @@ import org.springframework.web.context.request.async.DeferredResult;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
@@ -35,8 +34,6 @@ import static de.nutrisafe.UserDatabaseConfig.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.ResponseEntity.badRequest;
 import static org.springframework.http.ResponseEntity.ok;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Lazy
 @CrossOrigin()
@@ -82,6 +79,8 @@ public class NutriSafeRestController {
                 case "getUserInfo" -> getUserInfo(user.getUsername());
                 case "getUserInfoOfUser" -> getUserInfo(args);
                 case "getWhitelists" -> getWhitelists();
+                case "getWhitelist" -> getWhitelist(args);
+                case "getFunctions" -> getFunctions();
                 case "getUsersByAuthority" -> getUsersByAuthority(args);
                 default -> hyperledgerGet(function, args);
             };
@@ -332,10 +331,25 @@ public class NutriSafeRestController {
     private ResponseEntity<?> getWhitelists() {
         JsonObject response = new JsonObject();
         for (String whitelist : persistenceManager.selectAllWhitelists()) {
-            JsonArray functions = new JsonArray();
-            for (String function : persistenceManager.selectFunctionToWhitelistEntriesOfWhitelist(whitelist))
-                functions.add(function);
-            response.add(whitelist, functions);
+            response.add(whitelist, getFunctionsOfWhitelist(whitelist));
+        }
+        return ok(response.toString());
+    }
+
+    private ResponseEntity<?> getWhitelist(String[] args) {
+        if (args.length < 1)
+            throw new RequiredException("Whitelist name required.");
+        else {
+            JsonObject response = new JsonObject();
+            response.add(args[0], getFunctionsOfWhitelist(args[0]));
+            return ok(response.toString());
+        }
+    }
+
+    private ResponseEntity<?> getFunctions() {
+        JsonArray response = new JsonArray();
+        for (String function : persistenceManager.selectAllFunctions()) {
+            response.add(function);
         }
         return ok(response.toString());
     }
@@ -507,6 +521,13 @@ public class NutriSafeRestController {
                     persistenceManager.deleteUserToWhitelistEntry(username, DEFAULT_WRITE_WHITELIST);
         }
         return ok(newRole + " set for " + username);
+    }
+
+    private JsonArray getFunctionsOfWhitelist(String whitelist) {
+        JsonArray functions = new JsonArray();
+        for (String function : persistenceManager.selectFunctionToWhitelistEntriesOfWhitelist(whitelist))
+            functions.add(function);
+        return functions;
     }
 
     private String getRole(String username) {

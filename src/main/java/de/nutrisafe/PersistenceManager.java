@@ -87,6 +87,15 @@ public class PersistenceManager {
         return functions;
     }
 
+    List<String> selectAllFunctions() {
+        PreparedStatementCreator selectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select name from function");
+            return preparedStatement;
+        };
+        List<String> functions = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
+        return functions;
+    }
+
     List<String> selectAllWhitelists() {
         PreparedStatementCreator selectStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("select name from whitelist");

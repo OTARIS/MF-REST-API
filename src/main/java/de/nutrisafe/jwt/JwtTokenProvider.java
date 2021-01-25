@@ -96,16 +96,19 @@ public class JwtTokenProvider {
         WebClient webClient = WebClient.builder()
                 .defaultHeaders(header -> header.setBasicAuth("client1", "12345678"))
                 .build();
-        HashMap response = webClient.post().uri("http://localhost:8085/oauth/check_token")
-                .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
-                .exchange()
-                .block()
-                .bodyToMono(HashMap.class)
-                .block();
-        System.out.println(response);
-        if(response.containsKey("user_name")) {
+        HashMap response;
+        try{
+            response = webClient.post().uri("http://localhost:8085/oauth/check_token")
+                    .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
+                    .exchange()
+                    .block()
+                    .bodyToMono(HashMap.class)
+                    .block();
+        }catch(NullPointerException e){
+            return false;
+        }
+        if(response != null && response.containsKey("user_name")) {
             oauthUsername = response.get("user_name").toString();
-            System.out.println("OAUTHUSERNAME-----------------> " + oauthUsername);
             return true;
         }
         return false;

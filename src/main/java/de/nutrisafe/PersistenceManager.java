@@ -210,22 +210,55 @@ public class PersistenceManager {
         insertExternalUser(username, extUsername, "", 0L);
     }
 
-    void insertExternalUser(final String username, final String extUsername, final String token) {
-        insertExternalUser(username, extUsername, token, System.currentTimeMillis());
-    }
-
-    private void insertExternalUser(final String username, final String extUsername, final String token, final long lastUsed) {
+    private void insertExternalUser(final String username, final String extUsername, final String token, final long validUntil) {
         PreparedStatementCreator externalUserInsertStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
-                    "external_users(username, extusername, token, last_used) " +
+                    "external_users(username, extusername, token, valid_until) " +
                     "values (?, ?, ?, ?)");
             preparedStatement.setString(1, username);
             preparedStatement.setString(2, extUsername);
             preparedStatement.setString(3, token);
-            preparedStatement.setTimestamp(4, new Timestamp(lastUsed));
+            preparedStatement.setTimestamp(4, new Timestamp(validUntil));
             return preparedStatement;
         };
         jdbcTemplate.update(externalUserInsertStatement);
+    }
+
+    public void updateTokenOfExternalUser(final String extUsername, final String token, final long validUntil) {
+        PreparedStatementCreator externalUserInsertStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("update " +
+                    "external_users set token = ?, valid_until = ? " +
+                    "where extusername = ?");
+            preparedStatement.setString(1, token);
+            preparedStatement.setTimestamp(2, new Timestamp(validUntil));
+            preparedStatement.setString(3, extUsername);
+            return preparedStatement;
+        };
+        jdbcTemplate.update(externalUserInsertStatement);
+    }
+
+    public boolean isTokenValid(final String token) {
+        PreparedStatementCreator validitySelectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select valid_until " +
+                    "from external_users " +
+                    "where token = ?");
+            preparedStatement.setString(1, token);
+            return preparedStatement;
+        };
+        List<Long> times = this.jdbcTemplate.query(validitySelectStatement, new SimpleTimestampRowMapper());
+        return times.size() > 0 && times.get(0) > System.currentTimeMillis();
+    }
+
+    public String getExtUsername(final String token) {
+        PreparedStatementCreator tokenSelectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement("select extusername " +
+                    "from external_users " +
+                    "where token = ?");
+            preparedStatement.setString(1, token);
+            return preparedStatement;
+        };
+        List<String> extUsernames = this.jdbcTemplate.query(tokenSelectStatement, new SimpleStringRowMapper());
+        return extUsernames.size() > 0 ? extUsernames.get(0) : null;
     }
 
     void deleteExternalUserOfUser(final String username) {
@@ -334,6 +367,13 @@ public class PersistenceManager {
         @Override
         public String mapRow(ResultSet resultSet, int i) throws SQLException {
             return resultSet.getString(1);
+        }
+    }
+
+    private static class SimpleTimestampRowMapper implements RowMapper<Long> {
+        @Override
+        public Long mapRow(ResultSet resultSet, int i) throws SQLException {
+            return resultSet.getTimestamp(1).getTime();
         }
     }
 

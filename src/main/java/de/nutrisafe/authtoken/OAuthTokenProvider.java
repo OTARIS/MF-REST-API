@@ -2,9 +2,11 @@ package de.nutrisafe.authtoken;
 
 import de.nutrisafe.PersistenceManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -14,8 +16,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.DefaultUriBuilderFactory;
+import org.springframework.web.util.UriBuilder;
 
 import java.util.HashMap;
+import java.util.function.Consumer;
 
 @Lazy
 @Component
@@ -23,16 +28,21 @@ import java.util.HashMap;
 @ComponentScan(basePackages = {"de.nutrisafe"})
 public class OAuthTokenProvider {
 
+    @Value("${security.jwt.token.expire-length:3600000}")
+    private long validityInMilliseconds = 3600000; // 1h
     @Autowired
     private UserDetailsService userDetailsService;
     @Autowired
     PersistenceManager persistenceManager;
 
     public String getExternalUsername(String token) {
-        String username = getOwnOAuthUsername(token);
-        if (username == null)
-            username = getGoogleOAuthUsername(token);
-        return username;
+        String extUsername = persistenceManager.getExtUsername(token);
+        // Todo: flag in db: own server or Google?
+        if (extUsername == null || !persistenceManager.isTokenValid(token))
+            extUsername = getOwnOAuthUsername(token);
+        if (extUsername == null || !persistenceManager.isTokenValid(token))
+            extUsername = getGoogleOAuthUsername(token);
+        return extUsername;
     }
 
     public Authentication getAuthentication(String extUsername) {
@@ -42,42 +52,42 @@ public class OAuthTokenProvider {
     }
 
     private String getOwnOAuthUsername(String token) {
-        String extUsername = null;
         LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("token", token);
-        WebClient webClient = WebClient.builder()
-                // Todo: insecure credentials! -> config
-                .defaultHeaders(header -> header.setBasicAuth("client1", "12345678"))
-                .build();
+        // Todo: insecure credentials! -> config
+        return requestOAuthUsername(token, header -> header.setBasicAuth("client1", "12345678"), body, "user_name", "http://localhost:8085/oauth/check_token");
+    }
+
+    private String getGoogleOAuthUsername(String token) {
+        LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        DefaultUriBuilderFactory uriBuilderFactoryfactory = new DefaultUriBuilderFactory("https://oauth2.googleapis.com/tokeninfo");
+        UriBuilder uriBuilder = uriBuilderFactoryfactory.builder();
+        uriBuilder.queryParam("id_token", token);
+        return requestOAuthUsername(token, null, body, "given_name", uriBuilder.build().getPath());
+    }
+
+    private String requestOAuthUsername(String token, Consumer<HttpHeaders> header, LinkedMultiValueMap<String, String> body, String extUsernameKey, String uri) {
+        String extUsername = null;
+        WebClient.Builder webClientBuilder = WebClient.builder();
+        if (header != null)
+            webClientBuilder.defaultHeaders(header);
+        WebClient webClient = webClientBuilder.build();
         try {
-            HashMap response = webClient.post().uri("http://localhost:8085/oauth/check_token")
+            HashMap response = webClient.post().uri(uri)
                     .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
                     .exchange()
                     .block()
                     .bodyToMono(HashMap.class)
                     .block();
-            if (response.containsKey("user_name")) {
-                extUsername = response.get("user_name").toString();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return extUsername;
-    }
-
-    private String getGoogleOAuthUsername(String token) {
-        String extUsername = null;
-        WebClient webClient = WebClient.builder()
-                .build();
-        try {
-            HashMap response = webClient.post().uri("https://oauth2.googleapis.com/tokeninfo?id_token={token}", token)
-                    .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .exchange()
-                    .block()
-                    .bodyToMono(HashMap.class)
-                    .block();
-            if (response != null && response.containsKey("given_name")) {
-                extUsername = response.get("given_name").toString(); // TODO: set a different name
+            if (response != null && response.containsKey(extUsernameKey)) {
+                extUsername = response.get(extUsernameKey).toString();
+                long exp = validityInMilliseconds;
+                try {
+                    exp = Long.parseLong(response.get("exp").toString());
+                } catch (NumberFormatException e) {
+                    System.out.println("[NutriSafe REST API] Could not parse expiration timestamp.");
+                }
+                persistenceManager.updateTokenOfExternalUser(extUsername, token, exp);
             }
         } catch (Exception e) {
             e.printStackTrace();

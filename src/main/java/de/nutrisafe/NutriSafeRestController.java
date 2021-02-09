@@ -2,7 +2,7 @@ package de.nutrisafe;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import de.nutrisafe.jwt.JwtTokenProvider;
+import de.nutrisafe.authtoken.JwtTokenProvider;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,6 @@ import org.springframework.web.context.request.async.DeferredResult;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
@@ -35,8 +34,6 @@ import static de.nutrisafe.UserDatabaseConfig.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.ResponseEntity.badRequest;
 import static org.springframework.http.ResponseEntity.ok;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Lazy
 @CrossOrigin()
@@ -186,7 +183,7 @@ public class NutriSafeRestController {
                 return switch (function) {
                     case "createUser" -> createUser(bodyJson);
                     case "deleteUser" -> deleteUser(bodyJson);
-                    case "updatePassword" -> updatePassword(bodyJson);
+                    case "updatePassword" -> updatePassword(user, bodyJson);
                     case "setRole" -> setRole(bodyJson);
                     case "createWhitelist" -> createWhitelist(bodyJson);
                     case "deleteWhitelist" -> deleteWhitelist(bodyJson);
@@ -413,6 +410,7 @@ public class NutriSafeRestController {
     private ResponseEntity<?> deleteUser(JsonObject bodyJson) throws InvalidException {
         String username = retrieveUsername(bodyJson, true, true);
         persistenceManager.deleteUserToWhitelistEntriesOfUser(username);
+        persistenceManager.deleteExternalUserOfUser(username);
         userDetailsManager.deleteUser(username);
         return ok().body(username + " deleted.");
     }
@@ -422,7 +420,18 @@ public class NutriSafeRestController {
         String username = retrieveUsername(bodyJson, true, false);
         if (userDetailsManager.userExists(username))
             throw new InvalidException(username + " already exists.");
-        String password = retrievePassword(bodyJson, true);
+        boolean isOAuth = retrieveIsOAuth(bodyJson);
+        String password;
+        String extUsername;
+        if(isOAuth) {
+            password = "";
+            extUsername = retrieveExternalUsername(bodyJson, true, false);
+            if (persistenceManager.IsExternalUsernameUsed(extUsername))
+                throw new InvalidException(extUsername + " is already used by another account.");
+        } else {
+            password = new BCryptPasswordEncoder().encode(retrievePassword(bodyJson, true));
+            extUsername = "";
+        }
 
         // retrieve optional role from json
         List<GrantedAuthority> authorities = new ArrayList<>();
@@ -441,8 +450,10 @@ public class NutriSafeRestController {
 
         // create user
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(username,
-                new BCryptPasswordEncoder().encode(password), authorities);
+                password, authorities);
         userDetailsManager.createUser(userDetails);
+        if(isOAuth)
+            persistenceManager.insertExternalUser(username, extUsername);
 
         // link to whitelist(s)
         switch (role) {
@@ -460,18 +471,32 @@ public class NutriSafeRestController {
             return ok(username + " created and linked to " + whitelist + ".");
         }
     }
-    private ResponseEntity<?> updatePassword(JsonObject bodyJson) throws InvalidException {
-        String username = retrieveUsername(bodyJson, true, true);
-        String password = retrievePassword(bodyJson, true);
-        try{
-            UserDetails user = userDetailsManager.loadUserByUsername(username);
-            userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(username,
-                    new BCryptPasswordEncoder().encode(password), user.getAuthorities()));
-        } catch (BadCredentialsException e) {
-            return badRequest().body("Authentication Error");
+
+    private ResponseEntity<?> updatePassword(UserDetails user, JsonObject bodyJson) throws InvalidException {
+        if(retrieveIsOAuth(bodyJson)) {
+            String extUser = retrieveExternalUsername(bodyJson, true, false);
+            if (persistenceManager.IsExternalUsernameUsed(extUser))
+                throw new InvalidException(extUser + " is already used by another account.");
+            userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(user.getUsername(),
+                    "", user.getAuthorities()));
+            if(persistenceManager.isOAuthUser(user.getUsername()))
+                persistenceManager.deleteExternalUserOfUser(user.getUsername());
+            persistenceManager.insertExternalUser(user.getUsername(), extUser);
+            return ok("OAuth activated for " + user.getUsername() + " with external account " + extUser + ".");
+        } else {
+            String password = retrievePassword(bodyJson, true);
+            try{
+                userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(user.getUsername(),
+                        new BCryptPasswordEncoder().encode(password), user.getAuthorities()));
+                if(persistenceManager.isOAuthUser(user.getUsername()))
+                    persistenceManager.deleteExternalUserOfUser(user.getUsername());
+            } catch (BadCredentialsException e) {
+                return badRequest().body("Authentication Error");
+            }
+            return ok("Password updated for user " + user.getUsername() + ".");
         }
-        return ok("Password updated for user " + username + ".");
     }
+
     @SuppressFBWarnings({"SF_SWITCH_FALLTHROUGH", "SF_SWITCH_NO_DEFAULT"})
     private ResponseEntity<?> setRole(JsonObject bodyJson) throws InvalidException {
         String username = retrieveUsername(bodyJson, true, true);
@@ -571,6 +596,26 @@ public class NutriSafeRestController {
         if (existing && !userDetailsManager.userExists(username))
             throw new InvalidException("Username " + username + " does not exist.");
         else return username;
+    }
+
+    private String retrieveExternalUsername(JsonObject bodyJson, boolean required, boolean existing) throws InvalidException {
+        String username;
+        if (bodyJson.has("ext_username"))
+            username = bodyJson.get("username").toString().replace("\"", "");
+        else if (bodyJson.has("ext_user"))
+            username = bodyJson.get("user").toString().replace("\"", "");
+        else if (bodyJson.has("ext_name"))
+            username = bodyJson.get("name").toString().replace("\"", "");
+        else if (required)
+            throw new RequiredException("External username required.");
+        else return null;
+        if (existing && persistenceManager.getUsernameOfExternalUser(username) == null)
+            throw new InvalidException("External username " + username + " does not exist.");
+        else return username;
+    }
+
+    private boolean retrieveIsOAuth(JsonObject bodyJson) {
+        return bodyJson.has("oauth") && bodyJson.get("oauth").getAsBoolean();
     }
 
     private String retrievePassword(JsonObject bodyJson, boolean required) throws InvalidException {

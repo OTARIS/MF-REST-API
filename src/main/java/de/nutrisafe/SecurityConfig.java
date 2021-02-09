@@ -1,9 +1,10 @@
 package de.nutrisafe;
 
+import de.nutrisafe.authtoken.OAuthTokenProvider;
 import de.nutrisafe.functionrights.FunctionRightConfigurer;
 import de.nutrisafe.functionrights.FunctionRightProvider;
-import de.nutrisafe.jwt.JwtConfigurer;
-import de.nutrisafe.jwt.JwtTokenProvider;
+import de.nutrisafe.authtoken.TokenConfigurer;
+import de.nutrisafe.authtoken.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
@@ -33,6 +34,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
     @Autowired
+    private OAuthTokenProvider oAuthTokenProvider;
+    @Autowired
     private FunctionRightProvider functionRightProvider;
     @Value("${security.oauth2.resourceserver.jwk.key-set-uri}")
     String url;
@@ -51,7 +54,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/get").hasAuthority("ROLE_USER")
                 .antMatchers("/select").hasAuthority("ROLE_USER")
                 .antMatchers("/submit").hasAuthority("ROLE_USER")
-        ).formLogin().disable().csrf().disable().apply(new JwtConfigurer(jwtTokenProvider)).and()
+        ).formLogin().disable().csrf().disable().apply(new TokenConfigurer(jwtTokenProvider, oAuthTokenProvider)).and()
                 //.oauth2ResourceServer(oauth2 -> oauth2.jwt())
                 .apply(new FunctionRightConfigurer(functionRightProvider));
         http.cors();

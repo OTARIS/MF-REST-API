@@ -1,7 +1,7 @@
 import com.google.gson.Gson;
 import de.nutrisafe.NutriSafeRestController;
 import de.nutrisafe.UserDatabaseConfig;
-import de.nutrisafe.jwt.JwtTokenProvider;
+import de.nutrisafe.authtoken.JwtTokenProvider;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +17,6 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.HashMap;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = {NutriSafeRestController.class, UserDatabaseConfig.class})
 @AutoConfigureMockMvc
-@Import(de.nutrisafe.jwt.JwtTokenProvider.class)
+@Import(de.nutrisafe.authtoken.JwtTokenProvider.class)
 @Transactional
 @Sql({"classpath:test_init.sql"})
 public class NutriSafeRestControllerTest {

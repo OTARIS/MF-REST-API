@@ -596,11 +596,11 @@ public class NutriSafeRestController {
     private String retrieveExternalUsername(JsonObject bodyJson, boolean required, boolean existing) throws InvalidException {
         String username;
         if (bodyJson.has("ext_username"))
-            username = bodyJson.get("username").toString().replace("\"", "");
+            username = bodyJson.get("ext_username").toString().replace("\"", "");
         else if (bodyJson.has("ext_user"))
-            username = bodyJson.get("user").toString().replace("\"", "");
+            username = bodyJson.get("ext_user").toString().replace("\"", "");
         else if (bodyJson.has("ext_name"))
-            username = bodyJson.get("name").toString().replace("\"", "");
+            username = bodyJson.get("ext_name").toString().replace("\"", "");
         else if (required)
             throw new RequiredException("External username required.");
         else return null;

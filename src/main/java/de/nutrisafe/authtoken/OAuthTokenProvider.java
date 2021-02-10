@@ -45,6 +45,7 @@ public class OAuthTokenProvider {
             extUsername = getOwnOAuthUsername(token);
         if (extUsername == null || !persistenceManager.isTokenValid(token))
             extUsername = getGoogleOAuthUsername(token);
+        System.err.println(extUsername);
         return extUsername != null && persistenceManager.isTokenValid(token) ? extUsername : null;
     }
 
@@ -66,7 +67,7 @@ public class OAuthTokenProvider {
         DefaultUriBuilderFactory uriBuilderFactoryfactory = new DefaultUriBuilderFactory("https://oauth2.googleapis.com/tokeninfo");
         UriBuilder uriBuilder = uriBuilderFactoryfactory.builder();
         uriBuilder.queryParam("id_token", token);
-        return requestOAuthUsername(token, null, body, "given_name", uriBuilder.build().getPath());
+        return requestOAuthUsername(token, null, body, "given_name", uriBuilder.build().toString());
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
@@ -77,12 +78,14 @@ public class OAuthTokenProvider {
             webClientBuilder.defaultHeaders(header);
         WebClient webClient = webClientBuilder.build();
         try {
+            System.out.println("URI ------> " + uri);
             HashMap<String, String> response = Objects.requireNonNull(webClient.post().uri(uri)
                     .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
                     .exchange()
                     .block())
                     .bodyToMono(new ParameterizedTypeReference<HashMap<String, String>>(){})
                     .block();
+            System.err.println("RESPONSE ----->" + response);
             if (response != null && response.containsKey(extUsernameKey)) {
                 extUsername = response.get(extUsernameKey);
                 long exp = System.currentTimeMillis() + validityInMilliseconds;

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,6 +21,7 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @Lazy
@@ -73,17 +75,17 @@ public class OAuthTokenProvider {
             webClientBuilder.defaultHeaders(header);
         WebClient webClient = webClientBuilder.build();
         try {
-            HashMap response = webClient.post().uri(uri)
+            HashMap<String, String> response = Objects.requireNonNull(webClient.post().uri(uri)
                     .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
                     .exchange()
-                    .block()
-                    .bodyToMono(HashMap.class)
+                    .block())
+                    .bodyToMono(new ParameterizedTypeReference<HashMap<String, String>>(){})
                     .block();
             if (response != null && response.containsKey(extUsernameKey)) {
-                extUsername = response.get(extUsernameKey).toString();
+                extUsername = response.get(extUsernameKey);
                 long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {
-                    exp = Long.parseLong(response.get("exp").toString());
+                    exp = Long.parseLong(response.get("exp"));
                 } catch (NumberFormatException e) {
                     System.out.println("[NutriSafe REST API] Could not parse expiration timestamp.");
                 }

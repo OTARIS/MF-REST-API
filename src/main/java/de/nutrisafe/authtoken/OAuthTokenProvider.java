@@ -94,6 +94,7 @@ public class OAuthTokenProvider {
                 persistenceManager.updateTokenOfExternalUser(extUsername, token, exp);
             }
         } catch (Exception e) {
+            extUsername = null;
             e.printStackTrace();
         }
         return extUsername;

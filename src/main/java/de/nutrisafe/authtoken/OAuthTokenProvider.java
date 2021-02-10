@@ -19,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Consumer;
 
@@ -42,7 +43,7 @@ public class OAuthTokenProvider {
             extUsername = getOwnOAuthUsername(token);
         if (extUsername == null || !persistenceManager.isTokenValid(token))
             extUsername = getGoogleOAuthUsername(token);
-        return extUsername;
+        return extUsername != null && persistenceManager.isTokenValid(token) ? extUsername : null;
     }
 
     public Authentication getAuthentication(String extUsername) {
@@ -81,7 +82,7 @@ public class OAuthTokenProvider {
                     .block();
             if (response != null && response.containsKey(extUsernameKey)) {
                 extUsername = response.get(extUsernameKey).toString();
-                long exp = validityInMilliseconds;
+                long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {
                     exp = Long.parseLong(response.get("exp").toString());
                 } catch (NumberFormatException e) {

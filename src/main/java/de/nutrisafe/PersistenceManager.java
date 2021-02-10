@@ -270,20 +270,6 @@ public class PersistenceManager {
         jdbcTemplate.update(externalUserDeleteStatement);
     }
 
-    void updateExternalUserToken(final String extUsername, final String token) {
-        PreparedStatementCreator externalUserInsertStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("update " +
-                    "external_users " +
-                    "set token = ?, timestamp = ? " +
-                    "where extusername = ?");
-            preparedStatement.setString(1, token);
-            preparedStatement.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
-            preparedStatement.setString(3, extUsername);
-            return preparedStatement;
-        };
-        jdbcTemplate.update(externalUserInsertStatement);
-    }
-
     void insertFunctionToWhitelistEntry(final String function, final String whitelist) {
         PreparedStatementCreator whitelistInsertStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("insert into " +

@@ -61,13 +61,6 @@ public class NutriSafeRestController {
     @Autowired
     UserDetailsManager userDetailsManager;
 
-    //ToDo: remove
-    @PreAuthorize("isAuthenticated()")
-    @GetMapping("/message")
-    public String message() {
-        return "secret message";
-    }
-
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> get(@RequestParam String function, @RequestParam(required = false) String[] args) {
         try {

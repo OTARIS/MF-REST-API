@@ -45,7 +45,6 @@ public class OAuthTokenProvider {
             extUsername = getOwnOAuthUsername(token);
         if (extUsername == null || !persistenceManager.isTokenValid(token))
             extUsername = getGoogleOAuthUsername(token);
-        System.err.println(extUsername);
         return extUsername != null && persistenceManager.isTokenValid(token) ? extUsername : null;
     }
 
@@ -78,14 +77,12 @@ public class OAuthTokenProvider {
             webClientBuilder.defaultHeaders(header);
         WebClient webClient = webClientBuilder.build();
         try {
-            System.out.println("URI ------> " + uri);
             HashMap<String, String> response = Objects.requireNonNull(webClient.post().uri(uri)
                     .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
                     .exchange()
                     .block())
                     .bodyToMono(new ParameterizedTypeReference<HashMap<String, String>>(){})
                     .block();
-            System.err.println("RESPONSE ----->" + response);
             if (response != null && response.containsKey(extUsernameKey)) {
                 extUsername = response.get(extUsernameKey);
                 long exp = System.currentTimeMillis() + validityInMilliseconds;

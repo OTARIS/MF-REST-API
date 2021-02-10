@@ -133,40 +133,6 @@ public class NutriSafeRestController {
         }
     }
 
-    private ResponseEntity<?> selectDatabase(JsonObject bodyJson) throws InvalidException {
-        try {
-            if (bodyJson.has("columns") && bodyJson.has("tableName")) {
-                List<Map<String, Object>> result;
-                String cols = "";
-                String tableName = bodyJson.get("tableName").toString();
-                JsonArray jsonArray = bodyJson.getAsJsonArray("columns");
-                for (int i = 0; i < jsonArray.size(); i++) {
-                    cols += jsonArray.get(i).toString();
-                    if (i + 1 < jsonArray.size()) cols += ", ";
-                }
-                result = persistenceManager.selectFromDatabase(cols, tableName);
-                return ok(result);
-            } else return badRequest().body("Column(s) and table name are required");
-        } catch (Exception e) {
-            return badRequest().body("Error in request attributes");
-        }
-    }
-
-
-    private ResponseEntity<?> selectChaincode(JsonObject bodyJson) {
-        try {
-            String[] args = {bodyJson.toString()};
-            String response = getHelper().evaluateTransaction("queryChaincodeByQueryString", args);
-            JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
-            return ok(responseJson.get("response").toString());
-        } catch (UsernameNotFoundException e) {
-            return badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return badRequest().build();
-        }
-    }
-
     @PostMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> submit(@RequestParam String function, @RequestBody(required = false) String body) {
         try {
@@ -293,6 +259,40 @@ public class NutriSafeRestController {
         } catch (IOException e) {
             return badRequest().body("REST API was unable to parse the key defs file for possible functions. " +
                     "Please contact the administrator.");
+        }
+    }
+
+    private ResponseEntity<?> selectDatabase(JsonObject bodyJson) throws InvalidException {
+        try {
+            if (bodyJson.has("columns") && bodyJson.has("tableName")) {
+                List<Map<String, Object>> result;
+                String cols = "";
+                String tableName = bodyJson.get("tableName").toString();
+                JsonArray jsonArray = bodyJson.getAsJsonArray("columns");
+                for (int i = 0; i < jsonArray.size(); i++) {
+                    cols += jsonArray.get(i).toString();
+                    if (i + 1 < jsonArray.size()) cols += ", ";
+                }
+                result = persistenceManager.selectFromDatabase(cols, tableName);
+                return ok(result);
+            } else return badRequest().body("Column(s) and table name are required");
+        } catch (Exception e) {
+            return badRequest().body("Error in request attributes");
+        }
+    }
+
+
+    private ResponseEntity<?> selectChaincode(JsonObject bodyJson) {
+        try {
+            String[] args = {bodyJson.toString()};
+            String response = getHelper().evaluateTransaction("queryChaincodeByQueryString", args);
+            JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
+            return ok(responseJson.get("response").toString());
+        } catch (UsernameNotFoundException e) {
+            return badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return badRequest().build();
         }
     }
 

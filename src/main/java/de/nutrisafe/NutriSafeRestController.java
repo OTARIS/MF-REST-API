@@ -268,12 +268,11 @@ public class NutriSafeRestController {
         try {
             if (bodyJson.has("columns") && bodyJson.has("tableName")) {
                 List<Map<String, Object>> result;
-                String cols = "";
                 String tableName = bodyJson.get("tableName").toString();
                 JsonArray jsonArray = bodyJson.getAsJsonArray("columns");
+                String[] cols = new String[jsonArray.size()];
                 for (int i = 0; i < jsonArray.size(); i++) {
-                    cols += jsonArray.get(i).toString();
-                    if (i + 1 < jsonArray.size()) cols += ", ";
+                    cols[i] = jsonArray.get(i).toString();
                 }
                 result = persistenceManager.selectFromDatabase(cols, tableName);
                 return ok(result);

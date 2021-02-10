@@ -17,7 +17,7 @@ import java.sql.PreparedStatement;
 /**
  * The FunctionRightProvider validates if a {@link javax.servlet.ServletRequest} is allowed by the current user based
  * on the configured whitelists.
- *
+ * <p>
  * You can check this by calling {@link #validateFunction(ServletRequest)}.
  *
  * @author Dennis Lamken
@@ -41,10 +41,10 @@ public class FunctionRightProvider {
      */
     public boolean validateFunction(ServletRequest req) {
         String function = req.getParameter("function");
-        if(function != null) {
+        if (function != null) {
             try {
                 String username = SecurityContextHolder.getContext().getAuthentication().getName();
-                if(isFunctionWhitelisted(function, username)) {
+                if (isFunctionWhitelisted(function, username)) {
                     return true;
                 }
             } catch (Exception e) {

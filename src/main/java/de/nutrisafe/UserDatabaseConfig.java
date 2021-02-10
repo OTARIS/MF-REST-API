@@ -52,6 +52,7 @@ public class UserDatabaseConfig {
         jdbcTemplate.execute("create table if not exists whitelist (name varchar(128) primary key)");
         jdbcTemplate.execute("create table if not exists user_to_whitelist (username varchar(128) references users(username), whitelist varchar(128) references whitelist(name))");
         jdbcTemplate.execute("create table if not exists function (name varchar(128) not null, whitelist varchar(128) references whitelist(name))");
+        jdbcTemplate.execute("create table if not exists external_users (username varchar(128) references users(username), extusername varchar(128), token varchar(1024) not null, valid_until timestamp not null)");
 
         // check for existence of default whitelists
         if(!whitelistExists(DEFAULT_READ_WHITELIST, jdbcTemplate)) {

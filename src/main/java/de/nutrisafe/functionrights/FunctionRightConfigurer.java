@@ -8,7 +8,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * The FunctionRightConfigurer adds a {@link FunctionRightFilter} to the
  * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity HttpSecurity} filter chain.
- *
+ * <p>
  * Instantiate this and apply it to the used
  * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity} instance.
  *
@@ -25,6 +25,7 @@ public class FunctionRightConfigurer extends SecurityConfigurerAdapter<DefaultSe
      * Simply apply this instance to the used
      * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity} instance by calling
      * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity#apply(SecurityConfigurerAdapter)}.
+     *
      * @param functionRightProvider checks if a user is allowed to call a certain function
      */
     public FunctionRightConfigurer(FunctionRightProvider functionRightProvider) {

@@ -1,9 +1,8 @@
 package de.nutrisafe;
 
 import com.google.gson.JsonObject;
-import com.google.gson.stream.JsonReader;
-import org.apache.commons.io.IOUtils;
 import com.google.gson.JsonParser;
+import org.apache.commons.io.IOUtils;
 import org.hyperledger.fabric.gateway.*;
 
 import java.io.ByteArrayInputStream;
@@ -18,7 +17,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -79,6 +77,7 @@ public class Utils {
 
     /**
      * Setting up a connection to the "NutriSafe" Network.
+     *
      * @return returning the contract which is used for submitting or evaluate a transaction.
      */
     private Contract prepareTransaction() throws IOException {
@@ -89,7 +88,7 @@ public class Utils {
              * Preparing a builder for our Gateway.
              * .discovery(): Service discovery for all transaction submissions is enabled.
              */
-            if(network == null) {
+            if (network == null) {
                 fileInputStream = new FileInputStream(config.getNetworkConfigPath());
                 //ClassPathResource classPathResource = new ClassPathResource(config.getNetworkConfigPath());
                 Gateway.Builder builder = Gateway.createBuilder()
@@ -105,9 +104,8 @@ public class Utils {
         } catch (IOException e) {
             System.err.println("[NutriSafe REST API] Could not prepare the transaction.");
             e.printStackTrace();
-        }
-        finally {
-            if(fileInputStream != null)
+        } finally {
+            if (fileInputStream != null)
                 fileInputStream.close();
 
         }
@@ -118,17 +116,16 @@ public class Utils {
         String ret = "";
         try {
             Contract contract = prepareTransaction();
-            if(contract == null) throw new IOException();
+            if (contract == null) throw new IOException();
 
             //Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
             contract.addContractListener(this::alarmActivated);
 
             final byte[] result;
-            if (pArgs.size() == 0){
+            if (pArgs.size() == 0) {
                 result = contract.createTransaction(function)
                         .submit(args);
-            }
-            else {
+            } else {
                 result = contract.createTransaction(function)
                         .setTransient(pArgs)
                         .submit(args);
@@ -146,12 +143,11 @@ public class Utils {
         String ret = "";
         try {
             Contract contract = prepareTransaction();
-            if(contract == null) throw new IOException();
+            if (contract == null) throw new IOException();
             byte[] result;
-            if (args == null){
+            if (args == null) {
                 result = contract.evaluateTransaction(function);
-            }
-            else {
+            } else {
                 result = contract.evaluateTransaction(function, args);
             }
             System.out.println(new String(result, UTF_8));
@@ -164,15 +160,15 @@ public class Utils {
         return ret;
     }
 
-    public String getAlarmFlag(){
+    public String getAlarmFlag() {
         return this.alarmFlag;
     }
 
-    public void resetAlarmFlag(){
+    public void resetAlarmFlag() {
         alarmFlag = null;
     }
 
-    public void alarmActivated(ContractEvent e){
+    public void alarmActivated(ContractEvent e) {
         String pl = new String(e.getPayload().get(), UTF_8);
         JsonObject ret = (JsonObject) JsonParser.parseString(pl);
         alarmFlag = ret.get("key").toString();

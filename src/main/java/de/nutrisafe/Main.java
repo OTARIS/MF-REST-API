@@ -1,5 +1,6 @@
 package de.nutrisafe;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -8,12 +9,10 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
-import java.lang.annotation.Retention;
 import java.util.Map;
 
-@SpringBootApplication(exclude={DataSourceAutoConfiguration.class})
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 @PropertySource("classpath:application.properties")
 //@ComponentScan(basePackages = {"de.nutrisafe"})
 public class Main implements WebMvcConfigurer {
@@ -26,14 +25,14 @@ public class Main implements WebMvcConfigurer {
     @SuppressFBWarnings({"WMI_WRONG_MAP_ITERATOR", "SF_SWITCH_NO_DEFAULT"})
     public static void main(String[] args) {
         Map<String, String> env = System.getenv();
-        for(String e : env.keySet()){
+        for (String e : env.keySet()) {
             switch (e) {
                 case "CONNECTION_JSON" -> connectionJson = env.get(e);
                 case "PRIVATE_KEY" -> privateKey = env.get(e);
                 case "ADMIN_CERT" -> adminCert = env.get(e);
             }
         }
-        if (args.length > 2){
+        if (args.length > 2) {
             mspId = args[0];
             connectionJson = args[1];
             privateKey = args[2];

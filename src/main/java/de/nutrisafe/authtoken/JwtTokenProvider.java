@@ -1,30 +1,22 @@
-package de.nutrisafe.jwt;
+package de.nutrisafe.authtoken;
 
 import io.jsonwebtoken.*;
-import org.bouncycastle.util.encoders.UTF8;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 @Lazy
@@ -39,7 +31,6 @@ public class JwtTokenProvider {
     private long validityInMilliseconds = 3600000; // 1h
     @Autowired
     private UserDetailsService userDetailsService;
-    private String oauthUsername = null;
 
     @PostConstruct
     protected void init() {
@@ -65,8 +56,6 @@ public class JwtTokenProvider {
     }
 
     public String getUsername(String token) {
-        if(token.length() > 250)
-            return oauthUsername;
         return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getSubject();
     }
 
@@ -83,40 +72,8 @@ public class JwtTokenProvider {
             Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
             return !claims.getBody().getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-            try {
-                if (checkOauthToken(token))
-                    return true;
-            } catch (Exception e2) {
-                System.err.println("[NutriSafe REST API] Authorization Server Error");
-            }
             System.err.println("[NutriSafe REST API] Invalid JWT token");
             return false;
         }
     }
-
-
-    public boolean checkOauthToken(String token){
-        LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("token", token);
-        WebClient webClient = WebClient.builder()
-                .defaultHeaders(header -> header.setBasicAuth("client1", "12345678"))
-                .build();
-        HashMap response;
-        try{
-            response = webClient.post().uri("http://localhost:8085/oauth/check_token")
-                    .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
-                    .exchange()
-                    .block()
-                    .bodyToMono(HashMap.class)
-                    .block();
-        }catch(NullPointerException e){
-            return false;
-        }
-        if(response != null && response.containsKey("user_name")) {
-            oauthUsername = response.get("user_name").toString();
-            return true;
-        }
-        return false;
-    }
-
 }

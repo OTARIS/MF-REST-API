@@ -268,16 +268,17 @@ public class NutriSafeRestController {
         try {
             if (bodyJson.has("columns") && bodyJson.has("tableName")) {
                 List<Map<String, Object>> result;
-                String tableName = bodyJson.get("tableName").toString();
+                String tableName = bodyJson.get("tableName").getAsString();
                 JsonArray jsonArray = bodyJson.getAsJsonArray("columns");
                 String[] cols = new String[jsonArray.size()];
                 for (int i = 0; i < jsonArray.size(); i++) {
-                    cols[i] = jsonArray.get(i).toString();
+                    cols[i] = jsonArray.get(i).getAsString();
                 }
                 result = persistenceManager.selectFromDatabase(cols, tableName);
                 return ok(result);
             } else return badRequest().body("Column(s) and table name are required");
         } catch (Exception e) {
+            e.printStackTrace();
             return badRequest().body("Error in request attributes");
         }
     }

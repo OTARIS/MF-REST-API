@@ -1,12 +1,17 @@
 package de.nutrisafe;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowCountCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.DatabaseMetaDataCallback;
+import org.springframework.jdbc.support.JdbcUtils;
+import org.springframework.jdbc.support.MetaDataAccessException;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -78,22 +83,30 @@ public class PersistenceManager {
         return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
-    List<Map<String, Object>> selectFromDatabase(String[] cols, String tableName) {
+    // Todo: we might want to remove this method due to it's insecure character!
+    List<Map<String, Object>> selectFromDatabase(final String[] cols, final String tableName) throws Exception {
         if (cols.length < 1)
-            return new ArrayList<>();
+            throw new Exception("No column defined.");
 
-        StringBuilder selectStatementBuilder = new StringBuilder("select ?");
-        selectStatementBuilder.append(", ?".repeat(cols.length - 1));
-        selectStatementBuilder.append(" from ?");
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
-            for (int i = 0; i < cols.length; i++) {
-                preparedStatement.setString(i + 1, cols[i]);
-            }
-            preparedStatement.setString(cols.length + 1, tableName);
-            return preparedStatement;
-        };
-        return this.jdbcTemplate.query(selectStatement, new DatabaseSelectMapper());
+        // check if table name exists
+        Set<String> tableNames = JdbcUtils.extractDatabaseMetaData(Objects.requireNonNull(this.jdbcTemplate.getDataSource()), new GetTableNames());
+        if(!tableNames.contains(tableName))
+            throw new Exception("Table name does not exist.");
+
+        // check if the columns exist
+        SqlRowSet oneRowFromTheTable = jdbcTemplate.queryForRowSet("select * from " + tableName + " limit 1");
+        for(String col : cols)
+            oneRowFromTheTable.findColumn(col);
+
+        StringBuilder selectStatementBuilder = new StringBuilder("select ");
+        selectStatementBuilder.append(cols[0]);
+        for(int i = 1; i < cols.length; i++) {
+            selectStatementBuilder.append(", ");
+            selectStatementBuilder.append(cols[i]);
+        }
+        selectStatementBuilder.append(" from ");
+        selectStatementBuilder.append(tableName);
+        return jdbcTemplate.queryForList(selectStatementBuilder.toString());
     }
 
     List<String> selectUserToWhitelistEntriesOfUser(final String username) {
@@ -358,15 +371,16 @@ public class PersistenceManager {
         }
     }
 
-    private static class DatabaseSelectMapper implements RowMapper<Map<String, Object>> {
-        @Override
-        public Map<String, Object> mapRow(ResultSet resultSet, int i) throws SQLException {
-            HashMap<String, Object> result = new HashMap<>();
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            for (int z = 1; z <= metaData.getColumnCount(); z++) {
-                result.put(metaData.getColumnName(z), resultSet.getObject(z));
+    private static class GetTableNames implements DatabaseMetaDataCallback<Set<String>> {
+
+        @NotNull
+        public Set<String> processMetaData(DatabaseMetaData dbmd) throws SQLException {
+            ResultSet rs = dbmd.getTables(dbmd.getUserName(), null, null, new String[]{"TABLE"});
+            Set<String> l = new HashSet<>();
+            while (rs.next()) {
+                l.add(rs.getString(3));
             }
-            return result;
+            return l;
         }
     }
 

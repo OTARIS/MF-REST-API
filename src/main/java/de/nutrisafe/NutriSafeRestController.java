@@ -264,7 +264,7 @@ public class NutriSafeRestController {
         }
     }
 
-    private ResponseEntity<?> selectDatabase(JsonObject bodyJson) throws InvalidException {
+    private ResponseEntity<?> selectDatabase(JsonObject bodyJson) {
         try {
             if (bodyJson.has("columns") && bodyJson.has("tableName")) {
                 List<Map<String, Object>> result;

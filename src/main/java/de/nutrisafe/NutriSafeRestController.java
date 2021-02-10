@@ -1,6 +1,9 @@
 package de.nutrisafe;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import de.nutrisafe.authtoken.JwtTokenProvider;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -9,8 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.*;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +27,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -90,12 +94,12 @@ public class NutriSafeRestController {
         ForkJoinPool.commonPool().submit(() -> {
             try {
                 pollRequests.add(deferredResult);
-                while(helper.getAlarmFlag() == null) {
+                while (helper.getAlarmFlag() == null) {
                     Thread.sleep(1000);
                 }
             } catch (InterruptedException ignored) {
             }
-            for(DeferredResult df : pollRequests){
+            for (DeferredResult df : pollRequests) {
                 df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
             }
             deferredResult.onCompletion(() -> {
@@ -142,10 +146,8 @@ public class NutriSafeRestController {
                 }
                 result = persistenceManager.selectFromDatabase(cols, tableName);
                 return ok(result);
-            }
-            else return badRequest().body("Column(s) and table name are required");
-        }
-        catch(Exception e){
+            } else return badRequest().body("Column(s) and table name are required");
+        } catch (Exception e) {
             return badRequest().body("Error in request attributes");
         }
     }
@@ -303,10 +305,10 @@ public class NutriSafeRestController {
         return ok(response.toString());
     }
 
-    private ResponseEntity<?> getUsersByAuthority(String[] args){
+    private ResponseEntity<?> getUsersByAuthority(String[] args) {
         JsonObject response = new JsonObject();
         JsonArray usernames = new JsonArray();
-        for(String username : persistenceManager.selectUsersByAuthority(args[0]))
+        for (String username : persistenceManager.selectUsersByAuthority(args[0]))
             usernames.add(username);
         response.add("users", usernames);
         return ok(response.toString());
@@ -416,7 +418,7 @@ public class NutriSafeRestController {
         boolean isOAuth = retrieveIsOAuth(bodyJson);
         String password;
         String extUsername;
-        if(isOAuth) {
+        if (isOAuth) {
             password = "";
             extUsername = retrieveExternalUsername(bodyJson, true, false);
             if (persistenceManager.IsExternalUsernameUsed(extUsername))
@@ -445,7 +447,7 @@ public class NutriSafeRestController {
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(username,
                 password, authorities);
         userDetailsManager.createUser(userDetails);
-        if(isOAuth)
+        if (isOAuth)
             persistenceManager.insertExternalUser(username, extUsername);
 
         // link to whitelist(s)
@@ -466,22 +468,22 @@ public class NutriSafeRestController {
     }
 
     private ResponseEntity<?> updatePassword(UserDetails user, JsonObject bodyJson) throws InvalidException {
-        if(retrieveIsOAuth(bodyJson)) {
+        if (retrieveIsOAuth(bodyJson)) {
             String extUser = retrieveExternalUsername(bodyJson, true, false);
             if (persistenceManager.IsExternalUsernameUsed(extUser))
                 throw new InvalidException(extUser + " is already used by another account.");
             userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(user.getUsername(),
                     "", user.getAuthorities()));
-            if(persistenceManager.isOAuthUser(user.getUsername()))
+            if (persistenceManager.isOAuthUser(user.getUsername()))
                 persistenceManager.deleteExternalUserOfUser(user.getUsername());
             persistenceManager.insertExternalUser(user.getUsername(), extUser);
             return ok("OAuth activated for " + user.getUsername() + " with external account " + extUser + ".");
         } else {
             String password = retrievePassword(bodyJson, true);
-            try{
+            try {
                 userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(user.getUsername(),
                         new BCryptPasswordEncoder().encode(password), user.getAuthorities()));
-                if(persistenceManager.isOAuthUser(user.getUsername()))
+                if (persistenceManager.isOAuthUser(user.getUsername()))
                     persistenceManager.deleteExternalUserOfUser(user.getUsername());
             } catch (BadCredentialsException e) {
                 return badRequest().body("Authentication Error");

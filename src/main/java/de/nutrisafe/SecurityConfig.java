@@ -1,10 +1,10 @@
 package de.nutrisafe;
 
+import de.nutrisafe.authtoken.JwtTokenProvider;
 import de.nutrisafe.authtoken.OAuthTokenProvider;
+import de.nutrisafe.authtoken.TokenConfigurer;
 import de.nutrisafe.functionrights.FunctionRightConfigurer;
 import de.nutrisafe.functionrights.FunctionRightProvider;
-import de.nutrisafe.authtoken.TokenConfigurer;
-import de.nutrisafe.authtoken.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;

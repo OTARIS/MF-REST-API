@@ -8,7 +8,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * The JwtConfigurer adds a {@link TokenFilter} to the
  * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity HttpSecurity} filter chain.
- *
+ * <p>
  * Instantiate this and apply it to the used
  * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity} instance.
  *
@@ -26,6 +26,7 @@ public class TokenConfigurer extends SecurityConfigurerAdapter<DefaultSecurityFi
      * Simply apply this instance to the used
      * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity} instance by calling
      * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity#apply(SecurityConfigurerAdapter)}.
+     *
      * @param jwtTokenProvider checks if a user is allowed to call a certain function
      */
     public TokenConfigurer(JwtTokenProvider jwtTokenProvider, OAuthTokenProvider oAuthTokenProvider) {

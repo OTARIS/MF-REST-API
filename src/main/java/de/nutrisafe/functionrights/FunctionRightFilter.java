@@ -9,7 +9,7 @@ import java.io.IOException;
 /**
  * The FunctionRightFilter utilizes a {@link FunctionRightProvider} in order to filter requests based on allowed function
  * calls according to the whitelist entries.
- *
+ * <p>
  * Instantiate this and add it to the
  * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity} filter chain.
  *
@@ -23,6 +23,7 @@ public class FunctionRightFilter extends GenericFilterBean {
      * Simply add this instance to the used
      * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity} filter chain by calling
      * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity#addFilter(Filter)}.
+     *
      * @param functionRightProvider validates if a request is allowed by the current user
      */
     public FunctionRightFilter(FunctionRightProvider functionRightProvider) {

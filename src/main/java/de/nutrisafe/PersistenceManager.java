@@ -13,14 +13,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 
 @Lazy
 @Service
@@ -72,12 +66,7 @@ public class PersistenceManager {
     }
 
     List<String> selectAllUsers() {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select username from users");
-            return preparedStatement;
-        };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
+        return this.jdbcTemplate.queryForList("select username from users", String.class);
     }
 
     List<String> selectUsersByAuthority(final String role) {
@@ -86,12 +75,25 @@ public class PersistenceManager {
             preparedStatement.setString(1, role);
             return preparedStatement;
         };
-        List<String> users = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return users;
+        return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
-    List<Map<String, Object>> selectFromDatabase(String cols, String tableName) {
-        return jdbcTemplate.queryForList("select " + cols + " from " + tableName);
+    List<Map<String, Object>> selectFromDatabase(String[] cols, String tableName) {
+        if (cols.length < 1)
+            return new ArrayList<>();
+
+        StringBuilder selectStatementBuilder = new StringBuilder("select ?");
+        selectStatementBuilder.append(", ?".repeat(cols.length - 1));
+        selectStatementBuilder.append(" from ?");
+        PreparedStatementCreator selectStatement = connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
+            for (int i = 0; i < cols.length; i++) {
+                preparedStatement.setString(i + 1, cols[i]);
+            }
+            preparedStatement.setString(cols.length + 1, tableName);
+            return preparedStatement;
+        };
+        return this.jdbcTemplate.query(selectStatement, new DatabaseSelectMapper());
     }
 
     List<String> selectUserToWhitelistEntriesOfUser(final String username) {
@@ -100,8 +102,7 @@ public class PersistenceManager {
             preparedStatement.setString(1, username);
             return preparedStatement;
         };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
+        return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
     List<String> selectFunctionToWhitelistEntriesOfWhitelist(final String whitelist) {
@@ -110,26 +111,15 @@ public class PersistenceManager {
             preparedStatement.setString(1, whitelist);
             return preparedStatement;
         };
-        List<String> functions = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return functions;
+        return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
     List<String> selectAllFunctions() {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select name from function");
-            return preparedStatement;
-        };
-        List<String> functions = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return functions;
+        return this.jdbcTemplate.queryForList("select name from function", String.class);
     }
 
     List<String> selectAllWhitelists() {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select name from whitelist");
-            return preparedStatement;
-        };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
+        return this.jdbcTemplate.queryForList("select name from whitelist", String.class);
     }
 
     void deleteWhitelistEntry(final String whitelist) {
@@ -216,18 +206,14 @@ public class PersistenceManager {
     }
 
     void insertExternalUser(final String username, final String extUsername) {
-        insertExternalUser(username, extUsername, "", 0L);
-    }
-
-    private void insertExternalUser(final String username, final String extUsername, final String token, final long validUntil) {
         PreparedStatementCreator externalUserInsertStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
                     "external_users(username, extusername, token, valid_until) " +
                     "values (?, ?, ?, ?)");
             preparedStatement.setString(1, username);
             preparedStatement.setString(2, extUsername);
-            preparedStatement.setString(3, token);
-            preparedStatement.setTimestamp(4, new Timestamp(validUntil));
+            preparedStatement.setString(3, "");
+            preparedStatement.setTimestamp(4, new Timestamp(0L));
             return preparedStatement;
         };
         jdbcTemplate.update(externalUserInsertStatement);
@@ -369,6 +355,18 @@ public class PersistenceManager {
         @Override
         public Long mapRow(ResultSet resultSet, int i) throws SQLException {
             return resultSet.getTimestamp(1).getTime();
+        }
+    }
+
+    private static class DatabaseSelectMapper implements RowMapper<Map<String, Object>> {
+        @Override
+        public Map<String, Object> mapRow(ResultSet resultSet, int i) throws SQLException {
+            HashMap<String, Object> result = new HashMap<>();
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            for (int z = 1; z <= metaData.getColumnCount(); z++) {
+                result.put(metaData.getColumnName(z), resultSet.getObject(z));
+            }
+            return result;
         }
     }
 

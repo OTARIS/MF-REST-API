@@ -1,6 +1,7 @@
 package de.nutrisafe.authtoken;
 
 import de.nutrisafe.PersistenceManager;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
@@ -68,6 +69,7 @@ public class OAuthTokenProvider {
         return requestOAuthUsername(token, null, body, "given_name", uriBuilder.build().getPath());
     }
 
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private String requestOAuthUsername(String token, Consumer<HttpHeaders> header, LinkedMultiValueMap<String, String> body, String extUsernameKey, String uri) {
         String extUsername = null;
         WebClient.Builder webClientBuilder = WebClient.builder();

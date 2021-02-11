@@ -88,7 +88,12 @@ public class PersistenceManager {
             throw new Exception("No column defined.");
 
         // check if table name exists
-        Set<String> tableNames = JdbcUtils.extractDatabaseMetaData(Objects.requireNonNull(this.jdbcTemplate.getDataSource()), new GetTableNames());
+        Set<String> tableNames;
+        try {
+            tableNames = JdbcUtils.extractDatabaseMetaData(Objects.requireNonNull(this.jdbcTemplate.getDataSource()), new GetTableNames());
+        } catch(NullPointerException e) {
+            tableNames = new HashSet<>();
+        }
         if (!tableNames.contains(tableName))
             throw new Exception("Table name does not exist.");
 

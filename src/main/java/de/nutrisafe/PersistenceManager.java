@@ -83,17 +83,13 @@ public class PersistenceManager {
     }
 
     // Todo: we might want to remove this method due to its insecure character!
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     List<Map<String, Object>> selectFromDatabase(final String[] cols, final String tableName) throws Exception {
         if (cols.length < 1)
             throw new Exception("No column defined.");
 
         // check if table name exists
-        Set<String> tableNames;
-        try {
-            tableNames = JdbcUtils.extractDatabaseMetaData(Objects.requireNonNull(this.jdbcTemplate.getDataSource()), new GetTableNames());
-        } catch(NullPointerException e) {
-            tableNames = new HashSet<>();
-        }
+        Set<String> tableNames = JdbcUtils.extractDatabaseMetaData(Objects.requireNonNull(this.jdbcTemplate.getDataSource()), new GetTableNames());
         if (!tableNames.contains(tableName))
             throw new Exception("Table name does not exist.");
 

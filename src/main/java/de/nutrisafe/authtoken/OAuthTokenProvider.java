@@ -1,8 +1,6 @@
 package de.nutrisafe.authtoken;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.nutrisafe.PersistenceManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -11,13 +9,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -25,7 +23,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -40,7 +37,7 @@ public class OAuthTokenProvider {
     @Autowired
     private UserDetailsService userDetailsService;
     @Autowired
-    PersistenceManager persistenceManager;
+    private PersistenceManager persistenceManager;
 
     public String getExternalUsername(String token) {
         String extUsername = persistenceManager.getExtUsername(token);
@@ -92,10 +89,10 @@ public class OAuthTokenProvider {
             JsonObject response = new Gson().fromJson(rawResponse, JsonObject.class);
             System.out.println("RESPONSE----->" + response);
             if (response != null && response.has(extUsernameKey)) {
-                extUsername = response.get(extUsernameKey).getAsString();
+                extUsername = new BCryptPasswordEncoder().encode(response.get(extUsernameKey).getAsString());
                 long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {
-                    exp = response.get("exp").getAsLong()*1000;
+                    exp = response.get("exp").getAsLong() * 1000;
                 } catch (NumberFormatException e) {
                     System.out.println("[NutriSafe REST API] Could not parse expiration timestamp.");
                 }

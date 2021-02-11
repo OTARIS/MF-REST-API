@@ -101,7 +101,7 @@ public class NutriSafeRestController {
                 }
             } catch (InterruptedException ignored) {
             }
-            for(DeferredResult<ResponseEntity<String>> df : pollRequests){
+            for (DeferredResult<ResponseEntity<String>> df : pollRequests) {
                 df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
             }
             deferredResult.onCompletion(() -> {
@@ -437,7 +437,7 @@ public class NutriSafeRestController {
         String extUsername;
         if (isOAuth) {
             password = "";
-            extUsername = retrieveExternalUsername(bodyJson, true, false);
+            extUsername = new BCryptPasswordEncoder().encode(retrieveExternalUsername(bodyJson, true, false));
             if (persistenceManager.IsExternalUsernameUsed(extUsername))
                 throw new InvalidException(extUsername + " is already used by another account.");
         } else {
@@ -486,7 +486,7 @@ public class NutriSafeRestController {
 
     private ResponseEntity<?> updatePassword(UserDetails user, JsonObject bodyJson) throws InvalidException {
         if (retrieveIsOAuth(bodyJson)) {
-            String extUser = retrieveExternalUsername(bodyJson, true, false);
+            String extUser = new BCryptPasswordEncoder().encode(retrieveExternalUsername(bodyJson, true, false));
             if (persistenceManager.IsExternalUsernameUsed(extUser))
                 throw new InvalidException(extUser + " is already used by another account.");
             userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(user.getUsername(),

@@ -2,6 +2,7 @@ package de.nutrisafe.authtoken;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import de.nutrisafe.PersistenceManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,13 +80,13 @@ public class OAuthTokenProvider {
             webClientBuilder.defaultHeaders(header);
         WebClient webClient = webClientBuilder.build();
         try {
-            HashMap<String, JsonElement> response = Objects.requireNonNull(webClient.post().uri(uri)
+            JsonObject response = Objects.requireNonNull(webClient.post().uri(uri)
                     .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
                     .exchange()
                     .block())
-                    .bodyToMono(new ParameterizedTypeReference<HashMap<String, JsonElement>>(){})
+                    .bodyToMono(JsonObject.class)
                     .block();
-            if (response != null && response.containsKey(extUsernameKey)) {
+            if (response != null && response.has(extUsernameKey)) {
                 extUsername = response.get(extUsernameKey).getAsString();
                 long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {

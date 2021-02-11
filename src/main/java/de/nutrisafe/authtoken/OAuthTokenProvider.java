@@ -1,5 +1,7 @@
 package de.nutrisafe.authtoken;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import de.nutrisafe.PersistenceManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,17 +79,17 @@ public class OAuthTokenProvider {
             webClientBuilder.defaultHeaders(header);
         WebClient webClient = webClientBuilder.build();
         try {
-            HashMap<String, String> response = Objects.requireNonNull(webClient.post().uri(uri)
+            HashMap<String, JsonElement> response = Objects.requireNonNull(webClient.post().uri(uri)
                     .accept(MediaType.ALL).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(body))
                     .exchange()
                     .block())
-                    .bodyToMono(new ParameterizedTypeReference<HashMap<String, String>>(){})
+                    .bodyToMono(new ParameterizedTypeReference<HashMap<String, JsonElement>>(){})
                     .block();
             if (response != null && response.containsKey(extUsernameKey)) {
-                extUsername = response.get(extUsernameKey);
+                extUsername = response.get(extUsernameKey).getAsString();
                 long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {
-                    exp = Long.parseLong(response.get("exp"));
+                    exp = response.get("exp").getAsLong();
                 } catch (NumberFormatException e) {
                     System.out.println("[NutriSafe REST API] Could not parse expiration timestamp.");
                 }

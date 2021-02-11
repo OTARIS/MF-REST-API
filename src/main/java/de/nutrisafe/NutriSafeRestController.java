@@ -264,21 +264,21 @@ public class NutriSafeRestController {
         }
     }
 
-    private ResponseEntity<?> selectDatabase(JsonObject bodyJson) throws InvalidException {
+    private ResponseEntity<?> selectDatabase(JsonObject bodyJson) {
         try {
             if (bodyJson.has("columns") && bodyJson.has("tableName")) {
                 List<Map<String, Object>> result;
-                String cols = "";
-                String tableName = bodyJson.get("tableName").toString();
-                JsonArray jsonArray = bodyJson.getAsJsonArray("columns");
+                String tableName = Objects.requireNonNull(bodyJson.get("tableName").getAsString());
+                JsonArray jsonArray = Objects.requireNonNull(bodyJson.getAsJsonArray("columns"));
+                String[] cols = new String[jsonArray.size()];
                 for (int i = 0; i < jsonArray.size(); i++) {
-                    cols += jsonArray.get(i).toString();
-                    if (i + 1 < jsonArray.size()) cols += ", ";
+                    cols[i] = Objects.requireNonNull(jsonArray.get(i)).getAsString();
                 }
                 result = persistenceManager.selectFromDatabase(cols, tableName);
                 return ok(result);
             } else return badRequest().body("Column(s) and table name are required");
         } catch (Exception e) {
+            e.printStackTrace();
             return badRequest().body("Error in request attributes");
         }
     }

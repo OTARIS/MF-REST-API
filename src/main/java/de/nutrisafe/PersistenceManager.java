@@ -1,26 +1,24 @@
 package de.nutrisafe;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowCountCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.DatabaseMetaDataCallback;
+import org.springframework.jdbc.support.JdbcUtils;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 
 @Lazy
 @Service
@@ -72,12 +70,7 @@ public class PersistenceManager {
     }
 
     List<String> selectAllUsers() {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select username from users");
-            return preparedStatement;
-        };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
+        return this.jdbcTemplate.queryForList("select username from users", String.class);
     }
 
     List<String> selectUsersByAuthority(final String role) {
@@ -86,12 +79,34 @@ public class PersistenceManager {
             preparedStatement.setString(1, role);
             return preparedStatement;
         };
-        List<String> users = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return users;
+        return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
-    List<Map<String, Object>> selectFromDatabase(String cols, String tableName) {
-        return jdbcTemplate.queryForList("select " + cols + " from " + tableName);
+    // Todo: we might want to remove this method due to its insecure character!
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+    List<Map<String, Object>> selectFromDatabase(final String[] cols, final String tableName) throws Exception {
+        if (cols.length < 1)
+            throw new Exception("No column defined.");
+
+        // check if table name exists
+        Set<String> tableNames = JdbcUtils.extractDatabaseMetaData(Objects.requireNonNull(this.jdbcTemplate.getDataSource()), new GetTableNames());
+        if (!tableNames.contains(tableName))
+            throw new Exception("Table name does not exist.");
+
+        // check if the columns exist
+        SqlRowSet oneRowFromTheTable = jdbcTemplate.queryForRowSet("select * from " + tableName + " limit 1");
+        for (String col : cols)
+            oneRowFromTheTable.findColumn(col);
+
+        StringBuilder selectStatementBuilder = new StringBuilder("select ");
+        selectStatementBuilder.append(cols[0]);
+        for (int i = 1; i < cols.length; i++) {
+            selectStatementBuilder.append(", ");
+            selectStatementBuilder.append(cols[i]);
+        }
+        selectStatementBuilder.append(" from ");
+        selectStatementBuilder.append(tableName);
+        return jdbcTemplate.queryForList(selectStatementBuilder.toString());
     }
 
     List<String> selectUserToWhitelistEntriesOfUser(final String username) {
@@ -100,8 +115,7 @@ public class PersistenceManager {
             preparedStatement.setString(1, username);
             return preparedStatement;
         };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
+        return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
     List<String> selectFunctionToWhitelistEntriesOfWhitelist(final String whitelist) {
@@ -110,26 +124,15 @@ public class PersistenceManager {
             preparedStatement.setString(1, whitelist);
             return preparedStatement;
         };
-        List<String> functions = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return functions;
+        return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
     List<String> selectAllFunctions() {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select name from function");
-            return preparedStatement;
-        };
-        List<String> functions = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return functions;
+        return this.jdbcTemplate.queryForList("select name from function", String.class);
     }
 
     List<String> selectAllWhitelists() {
-        PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select name from whitelist");
-            return preparedStatement;
-        };
-        List<String> whitelists = this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
-        return whitelists;
+        return this.jdbcTemplate.queryForList("select name from whitelist", String.class);
     }
 
     void deleteWhitelistEntry(final String whitelist) {
@@ -216,18 +219,14 @@ public class PersistenceManager {
     }
 
     void insertExternalUser(final String username, final String extUsername) {
-        insertExternalUser(username, extUsername, "", 0L);
-    }
-
-    private void insertExternalUser(final String username, final String extUsername, final String token, final long validUntil) {
         PreparedStatementCreator externalUserInsertStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
                     "external_users(username, extusername, token, valid_until) " +
                     "values (?, ?, ?, ?)");
             preparedStatement.setString(1, username);
             preparedStatement.setString(2, extUsername);
-            preparedStatement.setString(3, token);
-            preparedStatement.setTimestamp(4, new Timestamp(validUntil));
+            preparedStatement.setString(3, "");
+            preparedStatement.setTimestamp(4, new Timestamp(0L));
             return preparedStatement;
         };
         jdbcTemplate.update(externalUserInsertStatement);
@@ -369,6 +368,19 @@ public class PersistenceManager {
         @Override
         public Long mapRow(ResultSet resultSet, int i) throws SQLException {
             return resultSet.getTimestamp(1).getTime();
+        }
+    }
+
+    private static class GetTableNames implements DatabaseMetaDataCallback<Set<String>> {
+
+        @NotNull
+        public Set<String> processMetaData(DatabaseMetaData dbmd) throws SQLException {
+            ResultSet rs = dbmd.getTables(dbmd.getUserName(), null, null, new String[]{"TABLE"});
+            Set<String> l = new HashSet<>();
+            while (rs.next()) {
+                l.add(rs.getString(3));
+            }
+            return l;
         }
     }
 

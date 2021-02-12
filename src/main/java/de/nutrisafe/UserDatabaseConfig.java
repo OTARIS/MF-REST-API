@@ -158,24 +158,57 @@ public class UserDatabaseConfig {
 
     @Bean
     public DataSource dataSource() {
-        String databaseName = "/nutrisaferestdb";
-        String url;
-        Integer port = config.getDatabaseConfig().getPort();
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        String databaseName = "/" + config.getDatabaseConfig().getName();
+        int port = config.getDatabaseConfig().getPort();
         if (port < 1 || port > 65535) {
             System.err.println("[NutriSafe REST API] Warning: Invalid port number! Fallback to 5432");
             port = 5432;
         }
+        String driver = config.getDatabaseConfig().getDriver().toLowerCase();
+        byte driverNumber = 0;
+        if(driver.contains("mysql")) {
+            driverNumber = 1;
+        } else if(driver.contains("maria")) {
+            driverNumber = 2;
+        } else if(driver.contains("db2")) {
+            driverNumber = 3;
+        } else if(driver.contains("sap") || driver.contains("hana")) {
+            driverNumber = 4;
+        } else if(driver.contains("informix")) {
+            driverNumber = 5;
+        } else if(!driver.contains("postgre")) {
+            System.err.println("[NutriSafe REST API] Warning: Invalid or unsupported database driver name! Fallback to PostgreSQL driver.");
+        }
+        StringBuilder url = new StringBuilder("jdbc:");
+        switch (driverNumber) {
+            case 1 -> url.append("mysql:");
+            case 2 -> url.append("mariadb:");
+            case 3 -> url.append("db2:");
+            case 4 -> url.append("sap:");
+            case 5 -> url.append("informix-sqli:");
+            default -> url.append("postgresql:");
+        }
         try {
-            URI.create(config.getDatabaseConfig().getHost());
-            url = "jdbc:postgresql:" + config.getDatabaseConfig().getHost() + ":"
-                    + port + databaseName;
+            URI uri = URI.create(config.getDatabaseConfig().getHost());
+            url.append(uri.toString());
+            url.append(":");
+            System.out.println("[NutriSafe REST API] Current DB host URI: " + uri.toString());
         } catch (Exception e) {
             System.err.println("[NutriSafe REST API] Warning: Invalid host address! Fallback to //localhost");
-            url = "jdbc:postgresql://localhost:" + port + databaseName;
+            url.append("//localhost:");
         }
-        DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl(url);
+        url.append(port);
+        url.append(databaseName);
+        dataSource.setUrl(url.toString());
+        switch (driverNumber) {
+            case 1 -> dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+            case 2 -> dataSource.setDriverClassName("org.mariadb.jdbc.Driver");
+            case 3 -> dataSource.setDriverClassName("com.ibm.db2.jcc.DB2Driver");
+            case 4 -> dataSource.setDriverClassName("com.sap.db.jdbc.Driver");
+            case 5 -> dataSource.setDriverClassName("com.informix.jdbc.IfxDriver");
+            default -> dataSource.setDriverClassName("org.postgresql.Driver");
+        }
         dataSource.setUsername(config.getDatabaseConfig().getUsername());
         dataSource.setPassword(config.getDatabaseConfig().getPassword());
         return dataSource;
@@ -194,7 +227,6 @@ public class UserDatabaseConfig {
     public UserDetailsManager userDetailsManager() {
         return new JdbcUserDetailsManager(dataSource());
     }
-
 
     private boolean whitelistExists(String whitelist, JdbcTemplate jdbcTemplate) {
         RowCountCallbackHandler countCallback = new RowCountCallbackHandler();

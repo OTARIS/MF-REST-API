@@ -1,15 +1,14 @@
 spring:
   profiles: deoni
-name: deoni-YAML
 company: DeoniMSP
-environment: deoni
-defaultNetwork: cheese
 networkConfigPath: connection_deoni.json
 chaincodeName: nutrisafe-chaincode
 channelName: cheese
 certPath: deoni_admin_cert.pem
 privateKeyPath: deoni_private_key
 databaseConfig:
+  name: nutrisaferestdb
+  driver: postgresql
   username: postgres
   password: GRm%m5cgTmw3S&kjxV
   host: //localhost
@@ -19,16 +18,15 @@ databaseConfig:
 
 spring:
   profiles: brangus
-name: brangus-YAML
 company: BrangusMSP
-environment: brangus
-defaultNetwork: cheese
 networkConfigPath: connection_brangus.json
 chaincodeName: nutrisafe-chaincode
 channelName: cheese
 certPath: brangus_admin_cert.pem
 privateKeyPath: brangus_private_key
 databaseConfig:
+  name: nutrisaferestdb
+  driver: postgresql
   username: postgres
   password: GRm%m5cgTmw3S&kjxV
   host: //localhost

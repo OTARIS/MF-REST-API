@@ -9,6 +9,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.apache.commons.cli.*;
 
 import java.util.Map;
 
@@ -32,20 +33,50 @@ public class Main implements WebMvcConfigurer {
                 case "ADMIN_CERT" -> adminCert = env.get(e);
             }
         }
-        if (args.length > 2) {
-            mspId = args[0];
-            connectionJson = args[1];
-            privateKey = args[2];
-            adminCert = args[3];
+
+        // Define Options
+        Options options = new Options();
+
+        Option mspIdOption = new Option("msp", "msp_id", true, "Sets the name in the Membership Service Provider of the network.");
+        mspIdOption.setRequired(false);
+        options.addOption(mspIdOption);
+
+        Option connectionJsonOption = new Option("con", "connection_json", true, "Sets the path to the connection definition file in JSON format.");
+        connectionJsonOption.setRequired(false);
+        options.addOption(connectionJsonOption);
+
+        Option privateKeyOption = new Option("pk", "private_key", true, "Sets the private key path of this blockchain member.");
+        privateKeyOption.setRequired(false);
+        options.addOption(privateKeyOption);
+
+        Option adminCertOption = new Option("cert", "admin_certificate", true, "Sets the path to the certificate.");
+        adminCertOption.setRequired(false);
+        options.addOption(adminCertOption);
+
+        // Parse Options
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+
+        try {
+            cmd = parser.parse(options, args);
+
+            mspId = cmd.getOptionValue("msp_id");
+            connectionJson = cmd.getOptionValue("connection_json");
+            privateKey = cmd.getOptionValue("private_key");
+            adminCert = cmd.getOptionValue("admin_certificate");
+
+            System.out.println("Starting REST API with the following configurations " +
+                    " \n MSP ID: " + mspId +
+                    " \n Connection path: " + connectionJson +
+                    " \n Private key: " + privateKey +
+                    " \n Admin Cert: " + adminCert);
+
+            SpringApplication.run(Main.class, args);
+        } catch(ParseException e) {
+            System.err.println(e.getMessage());
+            formatter.printHelp("NutriSafe REST API", options);
         }
-
-        System.out.println("Starting REST API with the following configurations " +
-                " \n MSP ID: " + mspId +
-                " \n Connection path: " + connectionJson +
-                " \n Private key: " + privateKey +
-                " \n Admin Cert: " + adminCert);
-
-        SpringApplication.run(Main.class, args);
     }
 
     @Bean

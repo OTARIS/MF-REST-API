@@ -55,7 +55,7 @@ public class UserDatabaseConfig {
         jdbcTemplate.execute("create table if not exists external_users (username varchar(128) references users(username), extusername varchar(128), token varchar(2048) not null, valid_until timestamp not null)");
 
         // check for existence of default whitelists
-        if(!whitelistExists(DEFAULT_READ_WHITELIST, jdbcTemplate)) {
+        if (!whitelistExists(DEFAULT_READ_WHITELIST, jdbcTemplate)) {
             System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default read whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('objectExists', '" + DEFAULT_READ_WHITELIST + "')");
@@ -69,7 +69,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('selectChaincode', '" + DEFAULT_READ_WHITELIST + "')");
             System.out.println("done!");
         }
-        if(!whitelistExists(DEFAULT_WRITE_WHITELIST, jdbcTemplate)) {
+        if (!whitelistExists(DEFAULT_WRITE_WHITELIST, jdbcTemplate)) {
             System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default write whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteObject', '" + DEFAULT_WRITE_WHITELIST + "')");
@@ -85,7 +85,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('exportDataToAuthPDC', '" + DEFAULT_WRITE_WHITELIST + "')");
             System.out.println("done!");
         }
-        if(!whitelistExists(DEFAULT_ADMIN_WHITELIST, jdbcTemplate)) {
+        if (!whitelistExists(DEFAULT_ADMIN_WHITELIST, jdbcTemplate)) {
             System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default admin whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_createSampleData', '" + DEFAULT_ADMIN_WHITELIST + "')");
@@ -115,7 +115,7 @@ public class UserDatabaseConfig {
 
         // TODO: creation of test users... needs to be deleted for production!
         UserDetailsManager userDetailsManager = userDetailsManager();
-        if(!userDetailsManager.userExists("nutriuser")) {
+        if (!userDetailsManager.userExists("nutriuser")) {
             List<GrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
             authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
@@ -127,7 +127,7 @@ public class UserDatabaseConfig {
             Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-        if(!userDetailsManager.userExists("public")) {
+        if (!userDetailsManager.userExists("public")) {
             List<GrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
             UserDetails user = new org.springframework.security.core.userdetails.User("public",
@@ -137,7 +137,7 @@ public class UserDatabaseConfig {
             Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-        if(!userDetailsManager.userExists("admin")) {
+        if (!userDetailsManager.userExists("admin")) {
             List<GrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
             authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
@@ -161,7 +161,7 @@ public class UserDatabaseConfig {
         String databaseName = "/nutrisaferestdb";
         String url;
         Integer port = config.getDatabaseConfig().getPort();
-        if(port < 1 || port > 65535) {
+        if (port < 1 || port > 65535) {
             System.err.println("[NutriSafe REST API] Warning: Invalid port number! Fallback to 5432");
             port = 5432;
         }

@@ -15,7 +15,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -23,8 +22,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -66,8 +63,8 @@ public class OAuthTokenProvider {
 
     private String getGoogleOAuthUsername(String token) {
         LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        DefaultUriBuilderFactory uriBuilderFactoryfactory = new DefaultUriBuilderFactory("https://oauth2.googleapis.com/tokeninfo");
-        UriBuilder uriBuilder = uriBuilderFactoryfactory.builder();
+        DefaultUriBuilderFactory uriBuilderFactory = new DefaultUriBuilderFactory("https://oauth2.googleapis.com/tokeninfo");
+        UriBuilder uriBuilder = uriBuilderFactory.builder();
         uriBuilder.queryParam("id_token", token);
         return requestOAuthUsername(token, null, body, "email", uriBuilder.build().toString());
     }

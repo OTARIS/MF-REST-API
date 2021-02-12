@@ -38,19 +38,24 @@ public class TokenFilter extends GenericFilterBean {
         String token = jwtTokenProvider.resolveToken((HttpServletRequest) req);
         Authentication auth = null;
         if (token != null) {
-            if (jwtTokenProvider.validateToken(token))
+            if (jwtTokenProvider.validateToken(token)) {
+                System.out.println("[NutriSafe REST API] Password related token found.");
                 auth = jwtTokenProvider.getAuthentication(token);
-            else {
+            } else {
                 String extUsername = oAuthTokenProvider.getExternalUsername(token);
-                if (extUsername != null)
+                if (extUsername != null) {
+                    System.out.println("[NutriSafe REST API] OAuth token found.");
                     auth = oAuthTokenProvider.getAuthentication(extUsername);
+                }
             }
         }
         SecurityContextHolder.getContext().setAuthentication(auth);
         if (auth == null) {
+            System.err.println("[NutriSafe REST API] Invalid token.");
             ((HttpServletResponse) res).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            ((HttpServletResponse) res).setHeader("Reason", "Invalid Token");
-        }
+            ((HttpServletResponse) res).setHeader("Reason", "Invalid token");
+        } else
+            System.out.println("[NutriSafe REST API] Valid token.");
         filterChain.doFilter(req, res);
     }
 

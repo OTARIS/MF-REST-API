@@ -72,7 +72,7 @@ public class JwtTokenProvider {
             Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
             return !claims.getBody().getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-            System.err.println("[NutriSafe REST API] Invalid JWT token");
+            // System.err.println("[NutriSafe REST API] Not an own, password related JWT token");
             return false;
         }
     }

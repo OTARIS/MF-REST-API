@@ -74,6 +74,7 @@ public class OAuthTokenProvider {
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private String requestOAuthUsername(String token, Consumer<HttpHeaders> header, LinkedMultiValueMap<String, String> body, String extUsernameKey, String uri) {
+        System.out.println("[NutriSafe REST API] Checking token validity at " + uri);
         String extUsername = null;
         WebClient.Builder webClientBuilder = WebClient.builder();
         if (header != null)
@@ -86,24 +87,19 @@ public class OAuthTokenProvider {
                     .block())
                     .bodyToMono(String.class)
                     .block();
-
-            System.out.println("RAW RESPONSE----->" + rawResponse);
             JsonObject response = new Gson().fromJson(rawResponse, JsonObject.class);
-            System.out.println("RESPONSE----->" + response);
             if (response != null && response.has(extUsernameKey)) {
                 extUsername = persistenceManager.getSHA256Hashed(response.get(extUsernameKey).getAsString());
                 long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {
                     exp = response.get("exp").getAsLong() * 1000;
                 } catch (NumberFormatException e) {
-                    System.out.println("[NutriSafe REST API] Could not parse expiration timestamp.");
+                    System.err.println("[NutriSafe REST API] Could not parse expiration timestamp.");
                 }
                 persistenceManager.updateTokenOfExternalUser(extUsername, token, exp);
             }
-            System.out.println("EXTUSERNAME " + extUsername);
         } catch (Exception e) {
             extUsername = null;
-            e.printStackTrace();
         }
         return extUsername;
     }

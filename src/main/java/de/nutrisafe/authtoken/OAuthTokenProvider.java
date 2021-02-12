@@ -23,6 +23,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -89,7 +91,7 @@ public class OAuthTokenProvider {
             JsonObject response = new Gson().fromJson(rawResponse, JsonObject.class);
             System.out.println("RESPONSE----->" + response);
             if (response != null && response.has(extUsernameKey)) {
-                extUsername = new BCryptPasswordEncoder().encode(response.get(extUsernameKey).getAsString());
+                extUsername = persistenceManager.getSHA256Hashed(response.get(extUsernameKey).getAsString());
                 long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {
                     exp = response.get("exp").getAsLong() * 1000;

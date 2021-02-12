@@ -17,6 +17,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.*;
 
@@ -356,6 +359,18 @@ public class PersistenceManager {
     }
 
     /* End of database checks */
+
+    public String getSHA256Hashed(String string) throws NoSuchAlgorithmException {
+        byte[] hashedBytes = MessageDigest.getInstance("SHA-256").digest(string.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hashedStringBuilder = new StringBuilder(2 * hashedBytes.length);
+        for (byte hash : hashedBytes) {
+            String hex = Integer.toHexString(0xff & hash);
+            if(hex.length() == 1)
+                hashedStringBuilder.append('0');
+            hashedStringBuilder.append(hex);
+        }
+        return hashedStringBuilder.toString();
+    }
 
     private static class SimpleStringRowMapper implements RowMapper<String> {
         @Override

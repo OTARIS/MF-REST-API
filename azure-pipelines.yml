@@ -8,7 +8,7 @@ trigger:
 - master
 
 pool:
-  vmImage: ubuntu-default
+  Nutrisafe-Uni: rhdev-nutrisafe
 
 steps:
 - task: Docker@2

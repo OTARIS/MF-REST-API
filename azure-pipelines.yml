@@ -1,4 +1,5 @@
 # Starter pipeline
+
 # Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
@@ -10,8 +11,11 @@ pool:
   vmImage: ubuntu-default
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- task: Docker@2
+  inputs:
+    repository: 'docker.pkg.github.com'
+    command: 'buildAndPush'
+    Dockerfile: '**/Dockerfile'
 
 - script: |
     echo Add other tasks to build, test, and deploy your project.

@@ -159,7 +159,7 @@ public class UserDatabaseConfig {
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        String databaseName = "/" + config.getDatabaseConfig().getName();
+        String databaseName = "/" + (Main.dbName == null ? config.getDatabaseConfig().getName() : Main.dbName);
         int port = config.getDatabaseConfig().getPort();
         if (port < 1 || port > 65535) {
             System.err.println("[NutriSafe REST API] Warning: Invalid port number! Fallback to 5432");
@@ -209,8 +209,8 @@ public class UserDatabaseConfig {
             case 5 -> dataSource.setDriverClassName("com.informix.jdbc.IfxDriver");
             default -> dataSource.setDriverClassName("org.postgresql.Driver");
         }
-        dataSource.setUsername(config.getDatabaseConfig().getUsername());
-        dataSource.setPassword(config.getDatabaseConfig().getPassword());
+        dataSource.setUsername(Main.dbUser == null ? config.getDatabaseConfig().getUsername() : Main.dbUser);
+        dataSource.setPassword(Main.dbPass == null ? config.getDatabaseConfig().getPassword() : Main.dbPass);
         return dataSource;
     }
 

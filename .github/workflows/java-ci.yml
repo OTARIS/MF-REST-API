@@ -1,6 +1,15 @@
 name: Java CI
 
-on: [push]
+on: 
+  pull_request:
+    types: [opened , synchronize]
+    branches:
+      - master
+    tags:
+      - v*
+
+env:
+  IMAGE_NAME: nutrisaferestapi
 
 jobs:
   container-job:
@@ -19,15 +28,42 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Set up JDK 14
         uses: actions/setup-java@v1
         with:
           java-version: 14
+
       - name: Build with Gradle
         run: ./gradlew build
+
       - name: Run Tests
         run: ./gradlew test
+
       - name: OWASP Dependency Check
         run: ./gradlew dependencyCheckAnalyze
+
       - name: SpotBugs
         run: ./gradlew check
+
+      - name: Build image
+        run: docker build . --file Dockerfile --tag $IMAGE_NAME
+
+      - name: Log into registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        run: |
+          IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "dev" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION

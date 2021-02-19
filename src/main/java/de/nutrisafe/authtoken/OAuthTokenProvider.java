@@ -22,6 +22,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -95,7 +96,7 @@ public class OAuthTokenProvider {
                 }
                 persistenceManager.updateTokenOfExternalUser(extUsername, token, exp);
             }
-        } catch (Exception e) {
+        } catch (NullPointerException | NoSuchAlgorithmException e) {
             extUsername = null;
         }
         return extUsername;

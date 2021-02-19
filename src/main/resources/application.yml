@@ -1,0 +1,17 @@
+# Member Info
+org: DeoniMSP
+cert: deoni_admin_cert.pem
+pk: deoni_private_key
+
+# Network Info
+network: connection_deoni.json
+channel: cheese
+chaincode: nutrisafe-chaincode
+
+# Database Info
+dbName: nutrisaferestdb
+dbDriver: postgresql
+dbUser: postgres
+dbPassword: GRm%m5cgTmw3S&kjxV
+dbHost: localhost/////
+dbPort: 5432

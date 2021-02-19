@@ -1,8 +1,6 @@
 package de.nutrisafe.authtoken;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.nutrisafe.PersistenceManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -11,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,7 +22,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
-import java.util.HashMap;
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -40,7 +37,7 @@ public class OAuthTokenProvider {
     @Autowired
     private UserDetailsService userDetailsService;
     @Autowired
-    PersistenceManager persistenceManager;
+    private PersistenceManager persistenceManager;
 
     public String getExternalUsername(String token) {
         String extUsername = persistenceManager.getExtUsername(token);
@@ -67,14 +64,15 @@ public class OAuthTokenProvider {
 
     private String getGoogleOAuthUsername(String token) {
         LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        DefaultUriBuilderFactory uriBuilderFactoryfactory = new DefaultUriBuilderFactory("https://oauth2.googleapis.com/tokeninfo");
-        UriBuilder uriBuilder = uriBuilderFactoryfactory.builder();
+        DefaultUriBuilderFactory uriBuilderFactory = new DefaultUriBuilderFactory("https://oauth2.googleapis.com/tokeninfo");
+        UriBuilder uriBuilder = uriBuilderFactory.builder();
         uriBuilder.queryParam("id_token", token);
         return requestOAuthUsername(token, null, body, "email", uriBuilder.build().toString());
     }
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private String requestOAuthUsername(String token, Consumer<HttpHeaders> header, LinkedMultiValueMap<String, String> body, String extUsernameKey, String uri) {
+        System.out.println("[NutriSafe REST API] Checking token validity at " + uri);
         String extUsername = null;
         WebClient.Builder webClientBuilder = WebClient.builder();
         if (header != null)
@@ -87,24 +85,19 @@ public class OAuthTokenProvider {
                     .block())
                     .bodyToMono(String.class)
                     .block();
-
-            System.out.println("RAW RESPONSE----->" + rawResponse);
             JsonObject response = new Gson().fromJson(rawResponse, JsonObject.class);
-            System.out.println("RESPONSE----->" + response);
             if (response != null && response.has(extUsernameKey)) {
-                extUsername = response.get(extUsernameKey).getAsString();
+                extUsername = persistenceManager.getSHA256Hashed(response.get(extUsernameKey).getAsString());
                 long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {
-                    exp = response.get("exp").getAsLong()*1000;
+                    exp = response.get("exp").getAsLong() * 1000;
                 } catch (NumberFormatException e) {
-                    System.out.println("[NutriSafe REST API] Could not parse expiration timestamp.");
+                    System.err.println("[NutriSafe REST API] Could not parse expiration timestamp.");
                 }
                 persistenceManager.updateTokenOfExternalUser(extUsername, token, exp);
             }
-            System.out.println("EXTUSERNAME " + extUsername);
-        } catch (Exception e) {
+        } catch (NullPointerException | NoSuchAlgorithmException e) {
             extUsername = null;
-            e.printStackTrace();
         }
         return extUsername;
     }

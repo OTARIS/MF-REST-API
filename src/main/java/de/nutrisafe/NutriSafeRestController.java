@@ -31,6 +31,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
@@ -101,7 +102,7 @@ public class NutriSafeRestController {
                 }
             } catch (InterruptedException ignored) {
             }
-            for(DeferredResult<ResponseEntity<String>> df : pollRequests){
+            for (DeferredResult<ResponseEntity<String>> df : pollRequests) {
                 df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
             }
             deferredResult.onCompletion(() -> {
@@ -434,15 +435,20 @@ public class NutriSafeRestController {
             throw new InvalidException(username + " already exists.");
         boolean isOAuth = retrieveIsOAuth(bodyJson);
         String password;
-        String extUsername;
+        String hashedExtUsername;
         if (isOAuth) {
             password = "";
-            extUsername = retrieveExternalUsername(bodyJson, true, false);
-            if (persistenceManager.IsExternalUsernameUsed(extUsername))
-                throw new InvalidException(extUsername + " is already used by another account.");
+            String extUsername = retrieveExternalUsername(bodyJson, true, false);
+            try {
+                hashedExtUsername = persistenceManager.getSHA256Hashed(extUsername);
+                if (persistenceManager.IsExternalUsernameUsed(hashedExtUsername))
+                    throw new InvalidException(extUsername + " is already used by another account.");
+            } catch (NoSuchAlgorithmException e) {
+                throw new InvalidException("Could not parse external username.");
+            }
         } else {
             password = new BCryptPasswordEncoder().encode(retrievePassword(bodyJson, true));
-            extUsername = "";
+            hashedExtUsername = "";
         }
 
         // retrieve optional role from json
@@ -465,7 +471,7 @@ public class NutriSafeRestController {
                 password, authorities);
         userDetailsManager.createUser(userDetails);
         if (isOAuth)
-            persistenceManager.insertExternalUser(username, extUsername);
+            persistenceManager.insertExternalUser(username, hashedExtUsername);
 
         // link to whitelist(s)
         switch (role) {
@@ -486,15 +492,20 @@ public class NutriSafeRestController {
 
     private ResponseEntity<?> updatePassword(UserDetails user, JsonObject bodyJson) throws InvalidException {
         if (retrieveIsOAuth(bodyJson)) {
-            String extUser = retrieveExternalUsername(bodyJson, true, false);
-            if (persistenceManager.IsExternalUsernameUsed(extUser))
-                throw new InvalidException(extUser + " is already used by another account.");
-            userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(user.getUsername(),
-                    "", user.getAuthorities()));
-            if (persistenceManager.isOAuthUser(user.getUsername()))
-                persistenceManager.deleteExternalUserOfUser(user.getUsername());
-            persistenceManager.insertExternalUser(user.getUsername(), extUser);
-            return ok("OAuth activated for " + user.getUsername() + " with external account " + extUser + ".");
+            try {
+                String extUser = retrieveExternalUsername(bodyJson, true, false);
+                String hashedExtUser = persistenceManager.getSHA256Hashed(extUser);
+                if (persistenceManager.IsExternalUsernameUsed(hashedExtUser))
+                    throw new InvalidException(extUser + " is already used by another account.");
+                userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(user.getUsername(),
+                        "", user.getAuthorities()));
+                if (persistenceManager.isOAuthUser(user.getUsername()))
+                    persistenceManager.deleteExternalUserOfUser(user.getUsername());
+                persistenceManager.insertExternalUser(user.getUsername(), hashedExtUser);
+                return ok("OAuth activated for " + user.getUsername() + " with external account " + extUser + ".");
+            } catch (NoSuchAlgorithmException e) {
+                throw new InvalidException("Could not parse external username.");
+            }
         } else {
             String password = retrievePassword(bodyJson, true);
             try {

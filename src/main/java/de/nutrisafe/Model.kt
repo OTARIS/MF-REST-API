@@ -3,25 +3,28 @@ package de.nutrisafe
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
+import org.springframework.stereotype.Component
 
 @Configuration
 @EnableConfigurationProperties
-@ConfigurationProperties
-open class Config {
-    var company: String = "unknown"
-    var networkConfigPath: String = "connection.json"
-    var chaincodeName: String = "nutrisafe-chaincode"
-    var channelName: String = "cheese"
-    var certPath: String = "unknown"
-    var privateKeyPath: String = "unknown"
-    var databaseConfig: DatabaseConfig = DatabaseConfig()
+@ConfigurationProperties()
+open class HyperledgerConfig {
+    var org: String = "unknown"
+    var cert: String = "unknown"
+    var pk: String = "unknown"
+    var network: String = "connection.json"
+    var channel: String = "cheese"
+    var chaincode: String = "nutrisafe-chaincode"
 }
 
+@Component
+@EnableConfigurationProperties
+@ConfigurationProperties()
 open class DatabaseConfig {
-    var name: String = "unknown"
-    var driver: String = "postgresql"
-    var username: String = "unknown"
-    var password: String = "unknown"
-    var host: String = "//localhost"
-    var port: Int = 5432
+    var dbName: String = "unknown"
+    var dbDriver: String = "postgresql"
+    var dbUser: String = "unknown"
+    var dbPassword: String = "unknown"
+    var dbHost: String = "//localhost"
+    var dbPort: Int = 5432
 }

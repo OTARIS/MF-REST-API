@@ -22,17 +22,17 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
 
-    private Config config;
+    private HyperledgerConfig config;
     private Network network = null;
     private String alarmFlag = null;
 
-    public Utils(Config config) {
+    public Utils(HyperledgerConfig config) {
         this.config = config;
     }
 
     private Wallet loadWallet() throws IOException {
         Wallet wallet = Wallets.newInMemoryWallet();
-        wallet.put(config.getCompany(), Identities.newX509Identity(config.getCompany(),
+        wallet.put(config.getOrg(), Identities.newX509Identity(config.getOrg(),
                 Objects.requireNonNull(loadCertificate()),
                 Objects.requireNonNull(loadPrivateKey())));
         return wallet;
@@ -41,7 +41,7 @@ public class Utils {
 
     private X509Certificate loadCertificate() {
         try {
-            FileInputStream fileInputStream = new FileInputStream(config.getCertPath());
+            FileInputStream fileInputStream = new FileInputStream(config.getCert());
             byte[] encodedCert = IOUtils.toByteArray(fileInputStream);
             //ClassPathResource classPathResource = new ClassPathResource(config.getCertPath());
             //byte[] encodedCert = FileCopyUtils.copyToByteArray(classPathResource.getInputStream());
@@ -57,7 +57,7 @@ public class Utils {
 
     private PrivateKey loadPrivateKey() {
         try {
-            FileInputStream fileInputStream = new FileInputStream(config.getPrivateKeyPath());
+            FileInputStream fileInputStream = new FileInputStream(config.getPk());
             //ClassPathResource classPathResource = new ClassPathResource(config.getPrivateKeyPath());
             //InputStream ci = classPathResource.getInputStream();
             String privateKeyPEM = IOUtils.toString(fileInputStream, UTF_8);
@@ -89,17 +89,17 @@ public class Utils {
              * .discovery(): Service discovery for all transaction submissions is enabled.
              */
             if (network == null) {
-                fileInputStream = new FileInputStream(config.getNetworkConfigPath());
+                fileInputStream = new FileInputStream(config.getNetwork());
                 //ClassPathResource classPathResource = new ClassPathResource(config.getNetworkConfigPath());
                 Gateway.Builder builder = Gateway.createBuilder()
-                        .identity(loadWallet(), config.getCompany())
+                        .identity(loadWallet(), config.getOrg())
                         .networkConfig(fileInputStream);
-                //.discovery(true);
+                        //.discovery(true);
                 Gateway gateway = builder.connect();
 
-                network = gateway.getNetwork(config.getChannelName());
+                network = gateway.getNetwork(config.getChannel());
             }
-            contract = network.getContract(config.getChaincodeName());
+            contract = network.getContract(config.getChaincode());
 
         } catch (IOException e) {
             System.err.println("[NutriSafe REST API] Could not prepare the transaction.");

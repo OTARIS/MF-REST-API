@@ -38,8 +38,7 @@ public class UserDatabaseConfig {
     public final static String ROLE_MEMBER = "ROLE_MEMBER";
     public final static String ROLE_USER = "ROLE_USER";
 
-    @Autowired
-    private Config config;
+    @Autowired DatabaseConfig dbConfig;
 
     @Lazy
     @Bean
@@ -159,38 +158,52 @@ public class UserDatabaseConfig {
     @Bean
     public DataSource dataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        String databaseName = "/" + (Main.dbName == null ? config.getDatabaseConfig().getName() : Main.dbName);
-        int port = config.getDatabaseConfig().getPort();
+        String databaseName = "/" + (Main.dbName == null ? dbConfig.getDbName() : Main.dbName);
+        int port = dbConfig.getDbPort();
         if (port < 1 || port > 65535) {
             System.err.println("[NutriSafe REST API] Warning: Invalid port number! Fallback to 5432");
             port = 5432;
         }
-        String driver = config.getDatabaseConfig().getDriver().toLowerCase();
-        byte driverNumber = 0;
-        if(driver.contains("mysql")) {
-            driverNumber = 1;
-        } else if(driver.contains("maria")) {
-            driverNumber = 2;
-        } else if(driver.contains("db2")) {
-            driverNumber = 3;
-        } else if(driver.contains("sap") || driver.contains("hana")) {
-            driverNumber = 4;
-        } else if(driver.contains("informix")) {
-            driverNumber = 5;
-        } else if(!driver.contains("postgre")) {
-            System.err.println("[NutriSafe REST API] Warning: Invalid or unsupported database driver name! Fallback to PostgreSQL driver.");
-        }
+        String driver = dbConfig.getDbDriver().toLowerCase();
         StringBuilder url = new StringBuilder("jdbc:");
-        switch (driverNumber) {
-            case 1 -> url.append("mysql:");
-            case 2 -> url.append("mariadb:");
-            case 3 -> url.append("db2:");
-            case 4 -> url.append("sap:");
-            case 5 -> url.append("informix-sqli:");
-            default -> url.append("postgresql:");
+        if(driver.contains("mysql")) {
+            dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+            url.append("mysql:");
+        } else if(driver.contains("maria")) {
+            dataSource.setDriverClassName("org.mariadb.jdbc.Driver");
+            url.append("mariadb:");
+        } else if(driver.contains("db2")) {
+            dataSource.setDriverClassName("com.ibm.db2.jcc.DB2Driver");
+            url.append("db2:");
+        } else if(driver.contains("sap") || driver.contains("hana")) {
+            dataSource.setDriverClassName("com.sap.db.jdbc.Driver");
+            url.append("sap:");
+        } else if(driver.contains("informix")) {
+            dataSource.setDriverClassName("com.informix.jdbc.IfxDriver");
+            url.append("informix-sqli:");
+        } else {
+            if(!driver.contains("postgre"))
+                System.err.println("[NutriSafe REST API] Warning: Invalid or unsupported database driver name! Fallback to PostgreSQL driver.");
+            dataSource.setDriverClassName("org.postgresql.Driver");
+            url.append("postgresql:");
         }
         try {
-            URI uri = URI.create(config.getDatabaseConfig().getHost());
+            String tmpHost = dbConfig.getDbHost();
+            if(tmpHost.charAt(0) != '/')
+                url.append("/");
+            if(tmpHost.charAt(1) != '/')
+                url.append("/");
+            if(tmpHost.endsWith("/")) {
+                int z = tmpHost.length() - 2;
+                for(int i = z; i > 0; i--) {
+                    if (tmpHost.charAt(i) != '/')
+                        break;
+                    else
+                        z = i;
+                }
+                tmpHost = tmpHost.substring(0, z);
+            }
+            URI uri = URI.create(tmpHost);
             url.append(uri.toString());
             url.append(":");
             System.out.println("[NutriSafe REST API] Current DB host URI: " + uri.toString());
@@ -201,16 +214,10 @@ public class UserDatabaseConfig {
         url.append(port);
         url.append(databaseName);
         dataSource.setUrl(url.toString());
-        switch (driverNumber) {
-            case 1 -> dataSource.setDriverClassName("com.mysql.jdbc.Driver");
-            case 2 -> dataSource.setDriverClassName("org.mariadb.jdbc.Driver");
-            case 3 -> dataSource.setDriverClassName("com.ibm.db2.jcc.DB2Driver");
-            case 4 -> dataSource.setDriverClassName("com.sap.db.jdbc.Driver");
-            case 5 -> dataSource.setDriverClassName("com.informix.jdbc.IfxDriver");
-            default -> dataSource.setDriverClassName("org.postgresql.Driver");
-        }
-        dataSource.setUsername(Main.dbUser == null ? config.getDatabaseConfig().getUsername() : Main.dbUser);
-        dataSource.setPassword(Main.dbPass == null ? config.getDatabaseConfig().getPassword() : Main.dbPass);
+        dataSource.setUsername(Main.dbUser == null ? dbConfig.getDbUser() : Main.dbUser);
+        dataSource.setPassword(Main.dbPass == null ? dbConfig.getDbPassword() : Main.dbPass);
+        System.out.println("Initialize " + databaseName + "\n  with user "
+                + dbConfig.getDbUser());
         return dataSource;
     }
 

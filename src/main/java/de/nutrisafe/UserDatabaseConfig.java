@@ -38,8 +38,7 @@ public class UserDatabaseConfig {
     public final static String ROLE_MEMBER = "ROLE_MEMBER";
     public final static String ROLE_USER = "ROLE_USER";
 
-    @Autowired
-    private Config config;
+    @Autowired DatabaseConfig dbConfig;
 
     @Lazy
     @Bean
@@ -158,26 +157,67 @@ public class UserDatabaseConfig {
 
     @Bean
     public DataSource dataSource() {
-        String databaseName = "/nutrisaferestdb";
-        String url;
-        Integer port = config.getDatabaseConfig().getPort();
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        String databaseName = "/" + (Main.dbName == null ? dbConfig.getDbName() : Main.dbName);
+        int port = dbConfig.getDbPort();
         if (port < 1 || port > 65535) {
             System.err.println("[NutriSafe REST API] Warning: Invalid port number! Fallback to 5432");
             port = 5432;
         }
+        String driver = dbConfig.getDbDriver().toLowerCase();
+        StringBuilder url = new StringBuilder("jdbc:");
+        if(driver.contains("mysql")) {
+            dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+            url.append("mysql:");
+        } else if(driver.contains("maria")) {
+            dataSource.setDriverClassName("org.mariadb.jdbc.Driver");
+            url.append("mariadb:");
+        } else if(driver.contains("db2")) {
+            dataSource.setDriverClassName("com.ibm.db2.jcc.DB2Driver");
+            url.append("db2:");
+        } else if(driver.contains("sap") || driver.contains("hana")) {
+            dataSource.setDriverClassName("com.sap.db.jdbc.Driver");
+            url.append("sap:");
+        } else if(driver.contains("informix")) {
+            dataSource.setDriverClassName("com.informix.jdbc.IfxDriver");
+            url.append("informix-sqli:");
+        } else {
+            if(!driver.contains("postgre"))
+                System.err.println("[NutriSafe REST API] Warning: Invalid or unsupported database driver name! Fallback to PostgreSQL driver.");
+            dataSource.setDriverClassName("org.postgresql.Driver");
+            url.append("postgresql:");
+        }
         try {
-            URI.create(config.getDatabaseConfig().getHost());
-            url = "jdbc:postgresql:" + config.getDatabaseConfig().getHost() + ":"
-                    + port + databaseName;
+            String tmpHost = dbConfig.getDbHost();
+            if(tmpHost.charAt(0) != '/')
+                url.append("/");
+            if(tmpHost.charAt(1) != '/')
+                url.append("/");
+            if(tmpHost.endsWith("/")) {
+                int z = tmpHost.length() - 2;
+                for(int i = z; i > 0; i--) {
+                    if (tmpHost.charAt(i) != '/')
+                        break;
+                    else
+                        z = i;
+                }
+                tmpHost = tmpHost.substring(0, z);
+            }
+            URI uri = URI.create(tmpHost);
+            url.append(uri.toString());
+            url.append(":");
+            System.out.println("[NutriSafe REST API] Current DB host URI: " + uri.toString());
         } catch (Exception e) {
             System.err.println("[NutriSafe REST API] Warning: Invalid host address! Fallback to //localhost");
-            url = "jdbc:postgresql://localhost:" + port + databaseName;
+            url.append("//localhost:");
         }
-        DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl(url);
-        dataSource.setUsername(config.getDatabaseConfig().getUsername());
-        dataSource.setPassword(config.getDatabaseConfig().getPassword());
+        url.append(port);
+        url.append(databaseName);
+        dataSource.setUrl(url.toString());
+        dataSource.setUsername(Main.dbUser == null ? dbConfig.getDbUser() : Main.dbUser);
+        dataSource.setPassword(Main.dbPass == null ? dbConfig.getDbPassword() : Main.dbPass);
+        System.out.println("Initialize " + databaseName + "\n  with user "
+                + dbConfig.getDbUser());
         return dataSource;
     }
 
@@ -194,7 +234,6 @@ public class UserDatabaseConfig {
     public UserDetailsManager userDetailsManager() {
         return new JdbcUserDetailsManager(dataSource());
     }
-
 
     private boolean whitelistExists(String whitelist, JdbcTemplate jdbcTemplate) {
         RowCountCallbackHandler countCallback = new RowCountCallbackHandler();

@@ -1,35 +1,17 @@
-spring:
-  profiles: deoni
-name: deoni-YAML
-company: DeoniMSP
-environment: deoni
-defaultNetwork: cheese
-networkConfigPath: connection_deoni.json
-chaincodeName: nutrisafe-chaincode
-channelName: cheese
-certPath: deoni_admin_cert.pem
-privateKeyPath: deoni_private_key
-databaseConfig:
-  username: postgres
-  password: GRm%m5cgTmw3S&kjxV
-  host: //localhost
-  port: 5432
+# Member Info
+org: DeoniMSP
+cert: deoni_admin_cert.pem
+pk: deoni_private_key
 
----
+# Network Info
+network: connection_deoni.json
+channel: cheese
+chaincode: nutrisafe-chaincode
 
-spring:
-  profiles: brangus
-name: brangus-YAML
-company: BrangusMSP
-environment: brangus
-defaultNetwork: cheese
-networkConfigPath: connection_brangus.json
-chaincodeName: nutrisafe-chaincode
-channelName: cheese
-certPath: brangus_admin_cert.pem
-privateKeyPath: brangus_private_key
-databaseConfig:
-  username: postgres
-  password: GRm%m5cgTmw3S&kjxV
-  host: //localhost
-  port: 5432
+# Database Info
+dbName: nutrisaferestdb
+dbDriver: postgresql
+dbUser: postgres
+dbPassword: GRm%m5cgTmw3S&kjxV
+dbHost: localhost/////
+dbPort: 5432

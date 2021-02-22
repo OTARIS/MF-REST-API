@@ -56,7 +56,7 @@ public class NutriSafeRestController {
     private final HashMap<String, Long> lastTry = new HashMap<>();
 
     @Autowired
-    private Config config;
+    private HyperledgerConfig config;
     @Autowired
     AuthenticationManager authenticationManager;
     @Autowired
@@ -205,10 +205,12 @@ public class NutriSafeRestController {
 
     private Utils getHelper() {
         if (helper == null) {
-            config.setCompany(Main.mspId);
-            config.setNetworkConfigPath(Main.connectionJson);
-            config.setPrivateKeyPath(Main.privateKey);
-            config.setCertPath(Main.adminCert);
+            if(Main.org != null)
+                config.setOrg(Main.org);
+            if(Main.privateKey != null)
+                config.setPk(Main.privateKey);
+            if(Main.adminCert != null)
+                config.setCert(Main.adminCert);
             helper = new Utils(config);
         }
         return helper;

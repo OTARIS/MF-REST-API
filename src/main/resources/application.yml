@@ -1,3 +1,6 @@
+spring:
+  profiles: test
+
 # Member Info
 org: DeoniMSP
 cert: deoni_admin_cert.pem

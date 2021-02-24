@@ -12,7 +12,7 @@ channel: cheese
 chaincode: nutrisafe-chaincode
 
 # Database Info
-dbName: blabla
+dbName: nutrisaferestdb
 dbDriver: postgresql
 dbUser: postgres
 dbPassword: GRm%m5cgTmw3S&kjxV

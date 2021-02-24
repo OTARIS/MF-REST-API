@@ -4,6 +4,7 @@ import de.nutrisafe.UserDatabaseConfig;
 import de.nutrisafe.authtoken.JwtTokenProvider;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -43,9 +44,13 @@ public class NutriSafeRestControllerTest {
     private String whitelist;
     private String password;
 
+    @BeforeAll
+    public static void init() {
+        System.setProperty("spring.profiles.active", "test");
+    }
 
     @BeforeEach
-    public void init() {
+    public void initTest() {
         // create token
         token = jwtTokenProvider.createToken("admin", Collections.singletonList("ROLE_ADMIN"));
         // create test user data

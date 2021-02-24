@@ -1,3 +1,6 @@
+spring:
+  profiles: test
+
 # Member Info
 org: DeoniMSP
 cert: deoni_admin_cert.pem
@@ -9,7 +12,7 @@ channel: cheese
 chaincode: nutrisafe-chaincode
 
 # Database Info
-dbName: nutrisaferestdb
+dbName: blabla
 dbDriver: postgresql
 dbUser: postgres
 dbPassword: GRm%m5cgTmw3S&kjxV

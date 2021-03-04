@@ -1,5 +1,5 @@
 import com.google.gson.Gson;
-import de.nutrisafe.NutriSafeRestController;
+import de.nutrisafe.MFRestController;
 import de.nutrisafe.UserDatabaseConfig;
 import de.nutrisafe.authtoken.JwtTokenProvider;
 import org.junit.Assert;
@@ -26,12 +26,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = {NutriSafeRestController.class, UserDatabaseConfig.class})
+@SpringBootTest(classes = {MFRestController.class, UserDatabaseConfig.class})
 @AutoConfigureMockMvc
 @Import(de.nutrisafe.authtoken.JwtTokenProvider.class)
 @Transactional
 @Sql({"classpath:test_init.sql"})
-public class NutriSafeRestControllerTest {
+public class MFRestControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

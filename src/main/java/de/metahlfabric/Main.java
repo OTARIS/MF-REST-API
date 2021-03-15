@@ -111,7 +111,8 @@ public class Main implements WebMvcConfigurer {
                 new PropertySourcesPlaceholderConfigurer();
         if(propertiesFile != null) {
             Resource[] resources = new Resource[ ]
-                    { new ClassPathResource("application.properties"), new FileSystemResource(propertiesFile)  };
+                    { new ClassPathResource("application.properties"), new ClassPathResource("application.yml"),
+                            new FileSystemResource(propertiesFile)  };
             properties.setLocations(resources);
         }
         properties.setIgnoreResourceNotFound(false);

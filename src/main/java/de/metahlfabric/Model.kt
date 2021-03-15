@@ -5,9 +5,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
 
+@Component
 @Configuration
 @EnableConfigurationProperties
-@ConfigurationProperties()
+@ConfigurationProperties
 open class HyperledgerConfig {
     var org: String = "unknown"
     var cert: String = "unknown"
@@ -18,8 +19,9 @@ open class HyperledgerConfig {
 }
 
 @Component
+@Configuration
 @EnableConfigurationProperties
-@ConfigurationProperties()
+@ConfigurationProperties
 open class DatabaseConfig {
     var dbName: String = "unknown"
     var dbDriver: String = "postgresql"

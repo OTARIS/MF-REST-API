@@ -1,5 +1,6 @@
 import com.google.gson.Gson;
 import de.metahlfabric.MFRestController;
+import de.metahlfabric.Main;
 import de.metahlfabric.UserDatabaseConfig;
 import de.metahlfabric.authtoken.JwtTokenProvider;
 import org.junit.Assert;
@@ -26,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = {MFRestController.class, UserDatabaseConfig.class})
+@SpringBootTest(classes = {MFRestController.class, UserDatabaseConfig.class, Main.class})
 @AutoConfigureMockMvc
 @Import(de.metahlfabric.authtoken.JwtTokenProvider.class)
 @Transactional

@@ -1,4 +1,4 @@
-package de.nutrisafe.functionrights;
+package de.metahlfabric.functionrights;
 
 import org.springframework.web.filter.GenericFilterBean;
 

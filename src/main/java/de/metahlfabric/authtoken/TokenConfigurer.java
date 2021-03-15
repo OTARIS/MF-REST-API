@@ -1,4 +1,4 @@
-package de.nutrisafe.authtoken;
+package de.metahlfabric.authtoken;
 
 import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

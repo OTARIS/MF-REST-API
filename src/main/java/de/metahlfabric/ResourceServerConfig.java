@@ -1,6 +1,6 @@
-package de.nutrisafe;
+package de.metahlfabric;
 
-import de.nutrisafe.functionrights.FunctionRightProvider;
+import de.metahlfabric.functionrights.FunctionRightProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.JwtAccessTokenConverterConfigurer;
 import org.springframework.context.annotation.Bean;

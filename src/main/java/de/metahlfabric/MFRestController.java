@@ -1,11 +1,11 @@
-package de.nutrisafe;
+package de.metahlfabric;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
-import de.nutrisafe.authtoken.JwtTokenProvider;
+import de.metahlfabric.authtoken.JwtTokenProvider;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 
-import static de.nutrisafe.UserDatabaseConfig.*;
+import static de.metahlfabric.UserDatabaseConfig.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.ResponseEntity.badRequest;
 import static org.springframework.http.ResponseEntity.ok;
@@ -45,7 +45,7 @@ import static org.springframework.http.ResponseEntity.ok;
 @RestController
 @DependsOn("jwtTokenProvider")
 @EnableGlobalMethodSecurity(prePostEnabled = true)
-public class NutriSafeRestController {
+public class MFRestController {
 
     private Utils helper;
 

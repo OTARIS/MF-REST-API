@@ -1,4 +1,4 @@
-package de.nutrisafe.functionrights;
+package de.metahlfabric.functionrights;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;

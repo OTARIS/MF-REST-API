@@ -1,4 +1,4 @@
-package de.nutrisafe;
+package de.metahlfabric;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jetbrains.annotations.NotNull;

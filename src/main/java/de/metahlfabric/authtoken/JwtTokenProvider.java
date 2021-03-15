@@ -1,4 +1,4 @@
-package de.nutrisafe.authtoken;
+package de.metahlfabric.authtoken;
 
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Autowired;

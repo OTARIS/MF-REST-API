@@ -20,6 +20,4 @@ jobs:
       - name: Checkmarx CxFlow Action
         uses: checkmarx-ts/checkmarx-cxflow-github-action@v1.1
         with:
-            checkmarx_client_secret: ${CXGO_TOKEN}
-        env:
-          CXGO_TOKEN: '${{ secrets.CHECKMARKS_TOKEN }}'
+            checkmarx_client_secret: ${{ secrets.CHECKMARKS_TOKEN }}

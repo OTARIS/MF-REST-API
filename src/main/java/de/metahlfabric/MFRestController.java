@@ -74,36 +74,28 @@ public class MFRestController {
     UserDetailsManager userDetailsManager;
 
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_JSON_VALUE)
-    public DeferredResult<ResponseEntity<?>> get(@RequestParam String function, @RequestParam(required = false) String[] args) {
-        DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<>(60000L);
-        deferredResult.onTimeout(() ->
-                deferredResult.setErrorResult(
-                        ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT)
-                                .body("Request timeout occurred.")));
-        ForkJoinPool.commonPool().submit(() -> {
-            try {
-                UserDetails user = persistenceManager.getCurrentUser();
-                if (user == null)
-                    throw new UsernameNotFoundException("No valid session. Please authenticate again.");
-                deferredResult.setResult(
-                    switch (function) {
-                        case "getAllUsers" -> getAllUsers();
-                        case "getUserInfo" -> getUserInfo(user.getUsername());
-                        case "getUserInfoOfUser" -> getUserInfo(args);
-                        case "getWhitelists" -> getWhitelists();
-                        case "getWhitelist" -> getWhitelist(args);
-                        case "getFunctions" -> getFunctions();
-                        case "getUsersByAuthority" -> getUsersByAuthority(args);
-                        default -> hyperledgerGet(function, args);
-                });
-            } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
-                deferredResult.setErrorResult(badRequest().body(e.getMessage()));
-            } catch (Exception e) {
-                e.printStackTrace();
-                deferredResult.setErrorResult(badRequest().build());
-            }
-        });
-        return deferredResult;
+    public ResponseEntity<?> get(@RequestParam String function, @RequestParam(required = false) String[] args) {
+        try {
+            UserDetails user = persistenceManager.getCurrentUser();
+            if (user == null)
+                throw new UsernameNotFoundException("No valid session. Please authenticate again.");
+            return
+                switch (function) {
+                    case "getAllUsers" -> getAllUsers();
+                    case "getUserInfo" -> getUserInfo(user.getUsername());
+                    case "getUserInfoOfUser" -> getUserInfo(args);
+                    case "getWhitelists" -> getWhitelists();
+                    case "getWhitelist" -> getWhitelist(args);
+                    case "getFunctions" -> getFunctions();
+                    case "getUsersByAuthority" -> getUsersByAuthority(args);
+                    default -> hyperledgerGet(function, args);
+            };
+        } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
+            return badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return badRequest().build();
+        }
     }
 
     @PostMapping(value = "/select", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -157,42 +149,34 @@ public class MFRestController {
     }
 
     @PostMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
-    public DeferredResult<ResponseEntity<?>> submit(@RequestParam String function, @RequestBody(required = false) String body) {
-        DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<>(60000L);
-        deferredResult.onTimeout(() ->
-                deferredResult.setErrorResult(
-                        ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT)
-                                .body("Request timeout occurred.")));
-        ForkJoinPool.commonPool().submit(() -> {
-            try {
-                UserDetails user = persistenceManager.getCurrentUser();
-                if (user == null)
-                    throw new UsernameNotFoundException("No valid session. Please authenticate again.");
-                else {
-                    JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
-                    deferredResult.setResult(
-                        switch (function) {
-                            case "createUser" -> createUser(bodyJson);
-                            case "deleteUser" -> deleteUser(bodyJson);
-                            case "updatePassword" -> updatePassword(user, bodyJson);
-                            case "setRole" -> setRole(bodyJson);
-                            case "createWhitelist" -> createWhitelist(bodyJson);
-                            case "deleteWhitelist" -> deleteWhitelist(bodyJson);
-                            case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
-                            case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
-                            case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
-                            case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
-                            default -> hyperledgerSubmit(function, bodyJson);
-                        });
-                }
-            } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
-                deferredResult.setErrorResult(badRequest().body(e.getMessage()));
-            } catch (Exception e) {
-                e.printStackTrace();
-                deferredResult.setErrorResult(badRequest().build());
+    public ResponseEntity<?> submit(@RequestParam String function, @RequestBody(required = false) String body) {
+        try {
+            UserDetails user = persistenceManager.getCurrentUser();
+            if (user == null)
+                throw new UsernameNotFoundException("No valid session. Please authenticate again.");
+            else {
+                JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
+                return
+                    switch (function) {
+                        case "createUser" -> createUser(bodyJson);
+                        case "deleteUser" -> deleteUser(bodyJson);
+                        case "updatePassword" -> updatePassword(user, bodyJson);
+                        case "setRole" -> setRole(bodyJson);
+                        case "createWhitelist" -> createWhitelist(bodyJson);
+                        case "deleteWhitelist" -> deleteWhitelist(bodyJson);
+                        case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
+                        case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
+                        case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
+                        case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
+                        default -> hyperledgerSubmit(function, bodyJson);
+                    };
             }
-        });
-        return deferredResult;
+        } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
+            return badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return badRequest().build();
+        }
     }
 
     @PostMapping(value = "/auth", produces = MediaType.APPLICATION_JSON_VALUE)

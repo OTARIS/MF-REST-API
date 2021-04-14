@@ -54,6 +54,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/get").hasAuthority("ROLE_USER")
                 .antMatchers("/select").hasAuthority("ROLE_USER")
                 .antMatchers("/submit").hasAuthority("ROLE_USER")
+                .antMatchers("/events").hasAuthority("ROLE_USER")
         ).formLogin().disable().csrf().disable().apply(new TokenConfigurer(jwtTokenProvider, oAuthTokenProvider)).and()
                 //.oauth2ResourceServer(oauth2 -> oauth2.jwt())
                 .apply(new FunctionRightConfigurer(functionRightProvider));

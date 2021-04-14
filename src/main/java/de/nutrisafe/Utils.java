@@ -16,11 +16,15 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
+
+    public ExecutorService executorService = Executors.newCachedThreadPool();
 
     private HyperledgerConfig config;
     private Network network = null;
@@ -172,5 +176,6 @@ public class Utils {
         String pl = new String(e.getPayload().get(), UTF_8);
         JsonObject ret = (JsonObject) JsonParser.parseString(pl);
         alarmFlag = ret.get("key").toString();
+        executorService.notifyAll();
     }
 }

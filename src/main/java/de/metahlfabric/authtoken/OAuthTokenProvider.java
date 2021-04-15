@@ -1,8 +1,8 @@
-package de.nutrisafe.authtoken;
+package de.metahlfabric.authtoken;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import de.nutrisafe.PersistenceManager;
+import de.metahlfabric.PersistenceManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

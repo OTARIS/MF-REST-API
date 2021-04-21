@@ -361,6 +361,7 @@ public class MFRestController {
                 if (hasRole && (hasWhitelist || hasFunction))
                     selectStatementBuilder.append(" and user_to_whitelist.username = authorities.username");
             }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
@@ -447,6 +448,7 @@ public class MFRestController {
                 if (hasWhitelist || hasFunction)
                     selectStatementBuilder.append(" and user_to_whitelist.username = authorities.username");
             }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
@@ -549,6 +551,7 @@ public class MFRestController {
                     selectStatementBuilder.append(" external_users.extusername = LIKE ? and external_users.username = user_to_whitelist.username");
                 }
             }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
@@ -635,6 +638,7 @@ public class MFRestController {
                 if (hasUsername || hasRole || hasExternal)
                     selectStatementBuilder.append(" and user_to_whitelist.whitelist = function.whitelist");
             }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
@@ -721,6 +725,7 @@ public class MFRestController {
                 if (hasWhitelist || hasFunction)
                     selectStatementBuilder.append(" and user_to_whitelist.username = external_users.username");
             }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;

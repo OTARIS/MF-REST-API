@@ -95,7 +95,7 @@ public class Main implements WebMvcConfigurer {
             SpringApplication.run(Main.class, args);
         } catch(ParseException e) {
             System.err.println(e.getMessage());
-            formatter.printHelp("NutriSafe REST API", options);
+            formatter.printHelp("MetaHL Fabric", options);
         }
     }
 

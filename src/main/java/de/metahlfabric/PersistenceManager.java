@@ -85,9 +85,7 @@ public class PersistenceManager {
         return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
-    // Todo: we might want to remove this method due to its insecure character!
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    List<String> selectFromDatabase(PreparedStatementCreator selectStatement) throws Exception {
+    List<String> selectFromDatabase(PreparedStatementCreator selectStatement) {
         return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 

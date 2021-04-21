@@ -47,6 +47,7 @@ import static org.springframework.http.ResponseEntity.ok;
 @RestController
 @DependsOn("jwtTokenProvider")
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
 public class MFRestController {
 
     private Utils helper;

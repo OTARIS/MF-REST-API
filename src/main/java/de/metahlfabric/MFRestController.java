@@ -57,7 +57,6 @@ public class MFRestController {
     private final static String ROLE_PARAM = "role";
     private final static String WHITELIST_PARAM = "whitelist";
     private final static String FUNCTION_PARAM = "function";
-    private final static String EXT_USERNAME_PARAM = "extUsername";
 
     // bruteforce protection attributes
     private final HashMap<String, Integer> triesCount = new HashMap<>();
@@ -137,7 +136,6 @@ public class MFRestController {
                     case ROLE_PARAM -> selectRole(bodyJson);
                     case WHITELIST_PARAM -> selectWhitelist(bodyJson);
                     case FUNCTION_PARAM -> selectFunction(bodyJson);
-                    case EXT_USERNAME_PARAM -> selectExternal(bodyJson);
                     default -> selectChaincode(bodyJson);
                 };
             }
@@ -286,12 +284,11 @@ public class MFRestController {
             boolean hasRole = where.has(ROLE_PARAM);
             boolean hasWhitelist = where.has(WHITELIST_PARAM);
             boolean hasFunction = where.has(FUNCTION_PARAM);
-            boolean hasExternal = where.has(EXT_USERNAME_PARAM);
             boolean mustSeparate = false;
 
             // Build select statement String
             StringBuilder selectStatementBuilder = new StringBuilder("select distinct username from");
-            if(!(hasRole || hasWhitelist || hasFunction || hasExternal)) {
+            if(!(hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" users");
             } else {
                 if (hasRole) {
@@ -301,20 +298,13 @@ public class MFRestController {
                 if (hasWhitelist || hasFunction) {
                     if (mustSeparate)
                         selectStatementBuilder.append(",");
-                    else
-                        mustSeparate = true;
                     selectStatementBuilder.append(" user_to_whitelist");
                 }
                 if (hasFunction) {
                     selectStatementBuilder.append(", function");
                 }
-                if (hasExternal) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(",");
-                    selectStatementBuilder.append(" external_users");
-                }
             }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction || hasExternal)) {
+            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" where");
                 mustSeparate = false;
                 if (hasUsername) {
@@ -322,8 +312,6 @@ public class MFRestController {
                         selectStatementBuilder.append(" user_to_whitelist.username LIKE ?");
                     else if (hasRole)
                         selectStatementBuilder.append(" authorities.username LIKE ?");
-                    else if (hasExternal)
-                        selectStatementBuilder.append(" external_users.username LIKE ?");
                     else
                         selectStatementBuilder.append(" users.username LIKE ?");
                     mustSeparate = true;
@@ -345,18 +333,7 @@ public class MFRestController {
                 if (hasFunction) {
                     if (mustSeparate)
                         selectStatementBuilder.append(" and");
-                    else
-                        mustSeparate = true;
                     selectStatementBuilder.append(" function.name LIKE ? and function.whitelist = user_to_whitelist.whitelist");
-                }
-                if (hasExternal) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(" and");
-                    selectStatementBuilder.append(" external_users.extusername LIKE ?");
-                    if (hasWhitelist || hasFunction)
-                        selectStatementBuilder.append(" and external_users.username = user_to_whitelist.username");
-                    else if (hasRole)
-                        selectStatementBuilder.append(" and external_users.username = authorities.username");
                 }
                 if (hasRole && (hasWhitelist || hasFunction))
                     selectStatementBuilder.append(" and user_to_whitelist.username = authorities.username");
@@ -379,10 +356,6 @@ public class MFRestController {
                 }
                 if(hasFunction) {
                     preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
-                    i++;
-                }
-                if(hasExternal) {
-                    preparedStatement.setString(i, where.get(EXT_USERNAME_PARAM).getAsString());
                 }
                 return preparedStatement;
             };
@@ -399,7 +372,6 @@ public class MFRestController {
             boolean hasRole = where.has(ROLE_PARAM);
             boolean hasWhitelist = where.has(WHITELIST_PARAM);
             boolean hasFunction = where.has(FUNCTION_PARAM);
-            boolean hasExternal = where.has(EXT_USERNAME_PARAM);
             boolean mustSeparate = false;
 
             // Build select statement String
@@ -410,10 +382,7 @@ public class MFRestController {
             if(hasFunction) {
                 selectStatementBuilder.append(", function");
             }
-            if(hasExternal) {
-                selectStatementBuilder.append(", external_users");
-            }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction || hasExternal)) {
+            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" where");
                 if (hasUsername) {
                     selectStatementBuilder.append(" authorities.username LIKE ?");
@@ -436,14 +405,7 @@ public class MFRestController {
                 if (hasFunction) {
                     if (mustSeparate)
                         selectStatementBuilder.append(" and");
-                    else
-                        mustSeparate = true;
                     selectStatementBuilder.append(" function.name LIKE ? and function.whitelist = user_to_whitelist.whitelist");
-                }
-                if (hasExternal) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(" and");
-                    selectStatementBuilder.append(" external_users.extusername LIKE ? and external_users.username = authorities.username");
                 }
                 if (hasWhitelist || hasFunction)
                     selectStatementBuilder.append(" and user_to_whitelist.username = authorities.username");
@@ -466,10 +428,6 @@ public class MFRestController {
                 }
                 if(hasFunction) {
                     preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
-                    i++;
-                }
-                if(hasExternal) {
-                    preparedStatement.setString(i, where.get(EXT_USERNAME_PARAM).getAsString());
                 }
                 return preparedStatement;
             };
@@ -486,19 +444,15 @@ public class MFRestController {
             boolean hasRole = where.has(ROLE_PARAM);
             boolean hasWhitelist = where.has(WHITELIST_PARAM);
             boolean hasFunction = where.has(FUNCTION_PARAM);
-            boolean hasExternal = where.has(EXT_USERNAME_PARAM);
             boolean mustSeparate = false;
 
             // Build select statement String
             StringBuilder selectStatementBuilder = new StringBuilder("select distinct");
-            if(hasUsername || hasRole || hasExternal) {
+            if(hasUsername || hasRole) {
                 selectStatementBuilder.append(" user_to_whitelist.whitelist from user_to_whitelist");
                 mustSeparate = true;
                 if(hasRole) {
                     selectStatementBuilder.append(", authorities");
-                }
-                if(hasExternal) {
-                    selectStatementBuilder.append(", external_users");
                 }
             } else if(!hasFunction) {
                 selectStatementBuilder.append(" whitelist.name from whitelist");
@@ -510,7 +464,7 @@ public class MFRestController {
                     selectStatementBuilder.append(" function.whitelist from");
                 selectStatementBuilder.append(" function");
             }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction || hasExternal)) {
+            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" where");
                 mustSeparate = false;
                 if (hasUsername) {
@@ -529,7 +483,7 @@ public class MFRestController {
                         selectStatementBuilder.append(" and");
                     else
                         mustSeparate = true;
-                    if (hasUsername || hasRole || hasExternal)
+                    if (hasUsername || hasRole)
                         selectStatementBuilder.append(" user_to_whitelist.whitelist LIKE ?");
                     else if (hasFunction)
                         selectStatementBuilder.append(" function.whitelist LIKE ?");
@@ -539,16 +493,9 @@ public class MFRestController {
                 if (hasFunction) {
                     if (mustSeparate)
                         selectStatementBuilder.append(" and");
-                    else
-                        mustSeparate = true;
                     selectStatementBuilder.append(" function.name LIKE ?");
-                    if (hasUsername || hasRole || hasExternal)
+                    if (hasUsername || hasRole)
                         selectStatementBuilder.append(" and function.whitelist = user_to_whitelist.whitelist");
-                }
-                if (hasExternal) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(" and");
-                    selectStatementBuilder.append(" external_users.extusername = LIKE ? and external_users.username = user_to_whitelist.username");
                 }
             }
             System.out.println("[MF] Calling: " + selectStatementBuilder);
@@ -569,10 +516,6 @@ public class MFRestController {
                 }
                 if(hasFunction) {
                     preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
-                    i++;
-                }
-                if(hasExternal) {
-                    preparedStatement.setString(i, where.get(EXT_USERNAME_PARAM).getAsString());
                 }
                 return preparedStatement;
             };
@@ -589,21 +532,17 @@ public class MFRestController {
             boolean hasRole = where.has(ROLE_PARAM);
             boolean hasWhitelist = where.has(WHITELIST_PARAM);
             boolean hasFunction = where.has(FUNCTION_PARAM);
-            boolean hasExternal = where.has(EXT_USERNAME_PARAM);
             boolean mustSeparate = false;
 
             // Build select statement String
             StringBuilder selectStatementBuilder = new StringBuilder("select distinct name from function");
-            if(hasUsername || hasRole || hasExternal) {
+            if(hasUsername || hasRole) {
                 selectStatementBuilder.append(", user_to_whitelist");
             }
             if(hasRole) {
                 selectStatementBuilder.append(", authorities");
             }
-            if(hasExternal) {
-                selectStatementBuilder.append(", external_users");
-            }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction || hasExternal)) {
+            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" where");
                 if (hasUsername) {
                     selectStatementBuilder.append(" user_to_whitelist.username LIKE ?");
@@ -626,16 +565,9 @@ public class MFRestController {
                 if (hasFunction) {
                     if (mustSeparate)
                         selectStatementBuilder.append(" and");
-                    else
-                        mustSeparate = true;
                     selectStatementBuilder.append(" function.name LIKE ?");
                 }
-                if (hasExternal) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(" and");
-                    selectStatementBuilder.append(" external_users.extusername LIKE ? and external_users.username = user_to_whitelist.username");
-                }
-                if (hasUsername || hasRole || hasExternal)
+                if (hasUsername || hasRole)
                     selectStatementBuilder.append(" and user_to_whitelist.whitelist = function.whitelist");
             }
             System.out.println("[MF] Calling: " + selectStatementBuilder);
@@ -656,97 +588,6 @@ public class MFRestController {
                 }
                 if(hasFunction) {
                     preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
-                    i++;
-                }
-                if(hasExternal) {
-                    preparedStatement.setString(i, where.get(EXT_USERNAME_PARAM).getAsString());
-                }
-                return preparedStatement;
-            };
-            return ok(persistenceManager.selectFromDatabase(selectStatement));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return badRequest().body("Error in request attributes");
-        }
-    }
-
-    private ResponseEntity<?> selectExternal(JsonObject where) {
-        try {
-            boolean hasUsername = where.has(USERNAME_PARAM);
-            boolean hasRole = where.has(ROLE_PARAM);
-            boolean hasWhitelist = where.has(WHITELIST_PARAM);
-            boolean hasFunction = where.has(FUNCTION_PARAM);
-            boolean hasExternal = where.has(EXT_USERNAME_PARAM);
-            boolean mustSeparate = false;
-
-            // Build select statement String
-            StringBuilder selectStatementBuilder = new StringBuilder("select distinct extusername from external_users");
-            if(hasRole) {
-                selectStatementBuilder.append(", authorities");
-            }
-            if(hasWhitelist || hasFunction) {
-                selectStatementBuilder.append(", user_to_whitelist");
-            }
-            if(hasFunction) {
-                selectStatementBuilder.append(", function");
-            }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction || hasExternal)) {
-                selectStatementBuilder.append(" where");
-                if (hasUsername) {
-                    selectStatementBuilder.append(" external_users.username LIKE ?");
-                    mustSeparate = true;
-                }
-                if (hasRole) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(" and");
-                    else
-                        mustSeparate = true;
-                    selectStatementBuilder.append(" authorities.authority LIKE ? and authorities.username = external_users.username");
-                }
-                if (hasWhitelist) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(" and");
-                    else
-                        mustSeparate = true;
-                    selectStatementBuilder.append(" user_to_whitelist.whitelist LIKE ?");
-                }
-                if (hasFunction) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(" and");
-                    else
-                        mustSeparate = true;
-                    selectStatementBuilder.append(" function.name LIKE ? and function.whitelist = user_to_whitelist.whitelist");
-                }
-                if (hasExternal) {
-                    if (mustSeparate)
-                        selectStatementBuilder.append(" and");
-                    selectStatementBuilder.append(" external_users.extusername LIKE ?");
-                }
-                if (hasWhitelist || hasFunction)
-                    selectStatementBuilder.append(" and user_to_whitelist.username = external_users.username");
-            }
-            System.out.println("[MF] Calling: " + selectStatementBuilder);
-            PreparedStatementCreator selectStatement = connection -> {
-                PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
-                int i = 1;
-                if(hasUsername) {
-                    preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
-                    i++;
-                }
-                if(hasRole) {
-                    preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
-                    i++;
-                }
-                if(hasWhitelist) {
-                    preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
-                    i++;
-                }
-                if(hasFunction) {
-                    preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
-                    i++;
-                }
-                if(hasExternal) {
-                    preparedStatement.setString(i, where.get(EXT_USERNAME_PARAM).getAsString());
                 }
                 return preparedStatement;
             };

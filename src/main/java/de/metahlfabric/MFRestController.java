@@ -290,7 +290,7 @@ public class MFRestController {
             boolean mustSeparate = false;
 
             // Build select statement String
-            StringBuilder selectStatementBuilder = new StringBuilder("select username from");
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct username from");
             if(!(hasRole || hasWhitelist || hasFunction || hasExternal)) {
                 selectStatementBuilder.append(" users");
             } else {
@@ -402,7 +402,7 @@ public class MFRestController {
             boolean mustSeparate = false;
 
             // Build select statement String
-            StringBuilder selectStatementBuilder = new StringBuilder("select authority from authorities");
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct authority from authorities");
             if(hasWhitelist || hasFunction) {
                 selectStatementBuilder.append(", user_to_whitelist");
             }
@@ -488,7 +488,7 @@ public class MFRestController {
             boolean mustSeparate = false;
 
             // Build select statement String
-            StringBuilder selectStatementBuilder = new StringBuilder("select ");
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct");
             if(hasUsername || hasRole || hasExternal) {
                 selectStatementBuilder.append(" whitelist from user_to_whitelist");
                 mustSeparate = true;
@@ -590,7 +590,7 @@ public class MFRestController {
             boolean mustSeparate = false;
 
             // Build select statement String
-            StringBuilder selectStatementBuilder = new StringBuilder("select name from function");
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct name from function");
             if(hasUsername || hasRole || hasExternal) {
                 selectStatementBuilder.append(", user_to_whitelist");
             }
@@ -676,7 +676,7 @@ public class MFRestController {
             boolean mustSeparate = false;
 
             // Build select statement String
-            StringBuilder selectStatementBuilder = new StringBuilder("select extusername from external_users");
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct extusername from external_users");
             if(hasRole) {
                 selectStatementBuilder.append(", authorities");
             }

@@ -96,7 +96,7 @@ public class OAuthTokenProvider {
                 }
                 persistenceManager.updateTokenOfExternalUser(extUsername, token, exp);
             }
-        } catch (NullPointerException | NoSuchAlgorithmException e) {
+        } catch (Exception e) {
             extUsername = null;
         }
         return extUsername;

@@ -492,7 +492,7 @@ public class MFRestController {
             // Build select statement String
             StringBuilder selectStatementBuilder = new StringBuilder("select distinct");
             if(hasUsername || hasRole || hasExternal) {
-                selectStatementBuilder.append(" whitelist from user_to_whitelist");
+                selectStatementBuilder.append(" user_to_whitelist.whitelist from user_to_whitelist");
                 mustSeparate = true;
                 if(hasRole) {
                     selectStatementBuilder.append(", authorities");
@@ -501,13 +501,13 @@ public class MFRestController {
                     selectStatementBuilder.append(", external_users");
                 }
             } else if(!hasFunction) {
-                selectStatementBuilder.append(" name from whitelist");
+                selectStatementBuilder.append(" whitelist.name from whitelist");
             }
             if(hasFunction) {
                 if (mustSeparate)
                     selectStatementBuilder.append(",");
                 else
-                    selectStatementBuilder.append(" whitelist from");
+                    selectStatementBuilder.append(" function.whitelist from");
                 selectStatementBuilder.append(" function");
             }
             if((hasUsername || hasRole || hasWhitelist || hasFunction || hasExternal)) {

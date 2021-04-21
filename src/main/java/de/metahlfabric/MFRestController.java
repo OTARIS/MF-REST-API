@@ -361,7 +361,6 @@ public class MFRestController {
                 if (hasRole && (hasWhitelist || hasFunction))
                     selectStatementBuilder.append(" and user_to_whitelist.username = authorities.username");
             }
-            System.out.println(selectStatementBuilder.toString());
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
@@ -505,6 +504,8 @@ public class MFRestController {
             if(hasFunction) {
                 if (mustSeparate)
                     selectStatementBuilder.append(",");
+                else
+                    selectStatementBuilder.append(" whitelist from");
                 selectStatementBuilder.append(" function");
             }
             if((hasUsername || hasRole || hasWhitelist || hasFunction || hasExternal)) {

@@ -17,7 +17,10 @@ jobs:
         run: 'echo "BRANCH=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_ENV'
       - name: Install cxgo-cli npm package
         run: npm install -g @cxgo/cli
-      - name: Checkmarx CxFlow Action
-        uses: checkmarx-ts/checkmarx-cxflow-github-action@v1.1
-        with:
-            checkmarx_client_secret: ${{ secrets.CHECKMARKS_TOKEN }}
+      - name: Scan project sources with cxgo-cli
+        run: >-
+          cxgo-cli scan:start --project-id=7
+          --api-url=https://api.checkmarx.net  --scan-tag=${GITHUB_SHA}
+          --source-folder=${GITHUB_WORKSPACE} --branch-name=${BRANCH}
+        env:
+          CXGO_TOKEN: '${{ secrets.CHECKMARKS_TOKEN }}'

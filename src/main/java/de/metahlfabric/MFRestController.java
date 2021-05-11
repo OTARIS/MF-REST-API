@@ -136,7 +136,7 @@ public class MFRestController {
                     case ROLE_PARAM -> selectRole(bodyJson);
                     case WHITELIST_PARAM -> selectWhitelist(bodyJson);
                     case FUNCTION_PARAM -> selectFunction(bodyJson);
-                    default -> selectChaincode(bodyJson);
+                    default -> selectChaincode(what, bodyJson);
                 };
             }
         } catch (RequiredException | UsernameNotFoundException e) {
@@ -598,9 +598,25 @@ public class MFRestController {
         }
     }
 
-    private ResponseEntity<?> selectChaincode(JsonObject bodyJson) {
+    private ResponseEntity<?> selectChaincode(String what, JsonObject bodyJson) {
         try {
-            String[] args = { bodyJson.toString() };
+            StringBuilder selectStatementBuilder = new StringBuilder("{ \"selector\":{\"");
+            selectStatementBuilder.append(what);
+            if(bodyJson.isJsonNull() || bodyJson.keySet().isEmpty())
+                selectStatementBuilder.append("\"}}");
+            else {
+                selectStatementBuilder.append("\":{");
+                for(String key : bodyJson.keySet()) {
+                    selectStatementBuilder.append("\"");
+                    selectStatementBuilder.append(key);
+                    selectStatementBuilder.append("\":\"");
+                    selectStatementBuilder.append(bodyJson.get(key));
+                    selectStatementBuilder.append("\",");
+                }
+                selectStatementBuilder.deleteCharAt(selectStatementBuilder.length() - 1);
+                selectStatementBuilder.append("}}}");
+            }
+            String[] args = { selectStatementBuilder.toString() };
             String response = getHelper().evaluateTransaction("queryChaincodeByQueryString", args);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
             return ok(responseJson.get("response").toString());

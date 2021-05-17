@@ -25,6 +25,7 @@ import java.util.*;
 
 @Lazy
 @Service
+@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
 public class PersistenceManager {
 
     @Autowired

@@ -25,7 +25,6 @@ import java.util.*;
 
 @Lazy
 @Service
-@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
 public class PersistenceManager {
 
     @Autowired
@@ -78,9 +77,10 @@ public class PersistenceManager {
 
     List<String> selectUsersByAuthority(final String role) {
         PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select username from authorities where authority = ?");
-            preparedStatement.setString(1, role);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("select username from authorities where authority = ?")){
+                preparedStatement.setString(1, role);
+                return preparedStatement;
+            }
         };
         return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
@@ -91,18 +91,20 @@ public class PersistenceManager {
 
     List<String> selectUserToWhitelistEntriesOfUser(final String username) {
         PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select whitelist from user_to_whitelist where username = ?");
-            preparedStatement.setString(1, username);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("select whitelist from user_to_whitelist where username = ?")){
+                preparedStatement.setString(1, username);
+                return preparedStatement;
+            }
         };
         return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
     List<String> selectFunctionToWhitelistEntriesOfWhitelist(final String whitelist) {
         PreparedStatementCreator selectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select name from function where whitelist = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("select name from function where whitelist = ?")){
+                preparedStatement.setString(1, whitelist);
+                return preparedStatement;
+            }
         };
         return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
@@ -117,83 +119,86 @@ public class PersistenceManager {
 
     void deleteWhitelistEntry(final String whitelist) {
         PreparedStatementCreator whitelistDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from whitelist where name = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("delete from whitelist where name = ?")){
+                preparedStatement.setString(1, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.update(whitelistDeleteStatement);
     }
 
     void deleteUserToWhitelistEntriesOfUser(final String username) {
         PreparedStatementCreator userToWhitelistDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where username = ?");
-            preparedStatement.setString(1, username);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where username = ?")){
+                preparedStatement.setString(1, username);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.update(userToWhitelistDeleteStatement);
     }
 
     void deleteUserToWhitelistEntriesOfWhitelist(final String whitelist) {
         PreparedStatementCreator userToWhitelistDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where whitelist = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where whitelist = ?")){
+                preparedStatement.setString(1, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.update(userToWhitelistDeleteStatement);
     }
 
     void deleteUserToWhitelistEntry(final String username, final String whitelist) {
         PreparedStatementCreator userToWhitelistDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where username = ? and whitelist = ?");
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("delete from user_to_whitelist where username = ? and whitelist = ?")) {
+                preparedStatement.setString(1, username);
+                preparedStatement.setString(2, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.update(userToWhitelistDeleteStatement);
     }
 
     void deleteFunctionToWhitelistEntriesOfWhitelist(String whitelist) {
         PreparedStatementCreator functionDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from function where whitelist = ?");
-            try {
+            try (PreparedStatement preparedStatement = connection.prepareStatement("delete from function where whitelist = ?")){
                 preparedStatement.setString(1, whitelist);
-            } catch (Throwable t) {
-                try (preparedStatement) {
-                    throw t;
-                }
+                return preparedStatement;
             }
-            return preparedStatement;
+
         };
         jdbcTemplate.update(functionDeleteStatement);
     }
 
     void deleteFunctionToWhitelistEntry(final String function, final String whitelist) {
         PreparedStatementCreator functionDeleteStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from function where name = ? and whitelist = ?");
-            preparedStatement.setString(1, function);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("delete from function where name = ? and whitelist = ?")){
+                preparedStatement.setString(1, function);
+                preparedStatement.setString(2, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.update(functionDeleteStatement);
     }
 
     void insertWhitelist(final String whitelist) {
         PreparedStatementCreator whitelistInsertStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into whitelist(name) values (?)");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("insert into whitelist(name) values (?)")){
+                preparedStatement.setString(1, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.update(whitelistInsertStatement);
     }
 
     void insertUserToWhitelistEntry(final String username, final String whitelist) {
         PreparedStatementCreator whitelistInsertStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
+            try(PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
                     "user_to_whitelist(username, whitelist) " +
-                    "values (?, ?)");
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
+                    "values (?, ?)")){
+                preparedStatement.setString(1, username);
+                preparedStatement.setString(2, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.update(whitelistInsertStatement);
     }
@@ -260,12 +265,13 @@ public class PersistenceManager {
 
     void insertFunctionToWhitelistEntry(final String function, final String whitelist) {
         PreparedStatementCreator whitelistInsertStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
+            try(PreparedStatement preparedStatement = connection.prepareStatement("insert into " +
                     "function(name, whitelist) " +
-                    "values (?, ?)");
-            preparedStatement.setString(1, function);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
+                    "values (?, ?)")){
+                preparedStatement.setString(1, function);
+                preparedStatement.setString(2, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.update(whitelistInsertStatement);
     }
@@ -277,10 +283,11 @@ public class PersistenceManager {
     boolean whitelistExists(String whitelist) {
         RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
         PreparedStatementCreator whitelistSelectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select * from whitelist " +
-                    "where name = ?");
-            preparedStatement.setString(1, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("select * from whitelist " +
+                    "where name = ?")){
+                preparedStatement.setString(1, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.query(whitelistSelectStatement, countCallback);
         return countCallback.getRowCount() > 0;
@@ -289,11 +296,12 @@ public class PersistenceManager {
     boolean functionToWhitelistEntryExists(String function, String whitelist) {
         RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
         PreparedStatementCreator functionToWhitelistSelectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select * from function " +
-                    "where name = ? and whitelist = ?");
-            preparedStatement.setString(1, function);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("select * from function " +
+                    "where name = ? and whitelist = ?")){
+                preparedStatement.setString(1, function);
+                preparedStatement.setString(2, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.query(functionToWhitelistSelectStatement, countCallback);
         return countCallback.getRowCount() > 0;
@@ -302,11 +310,12 @@ public class PersistenceManager {
     boolean userToWhitelistExists(String username, String whitelist) {
         RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
         PreparedStatementCreator userToWhitelistSelectStatement = connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement("select * from user_to_whitelist " +
-                    "where username = ? and whitelist = ?");
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, whitelist);
-            return preparedStatement;
+            try(PreparedStatement preparedStatement = connection.prepareStatement("select * from user_to_whitelist " +
+                    "where username = ? and whitelist = ?")){
+                preparedStatement.setString(1, username);
+                preparedStatement.setString(2, whitelist);
+                return preparedStatement;
+            }
         };
         jdbcTemplate.query(userToWhitelistSelectStatement, countCallback);
         return countCallback.getRowCount() > 0;

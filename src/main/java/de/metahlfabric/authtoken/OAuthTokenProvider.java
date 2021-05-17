@@ -59,7 +59,7 @@ public class OAuthTokenProvider {
         LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("token", token);
         // Todo: insecure credentials! -> config
-        return requestOAuthUsername(token, header -> header.setBasicAuth("client1", "12345678"), body, "user_name", "http://localhost:8085/oauth/check_token");
+        return requestOAuthUsername(token, header -> header.setBasicAuth("NutriSafe_Web_UI", "12345678"), body, "user_name", "http://localhost:8085/oauth/check_token");
     }
 
     private String getGoogleOAuthUsername(String token) {

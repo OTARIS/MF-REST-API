@@ -85,31 +85,8 @@ public class PersistenceManager {
         return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
-    // Todo: we might want to remove this method due to its insecure character!
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
-    List<Map<String, Object>> selectFromDatabase(final String[] cols, final String tableName) throws Exception {
-        if (cols.length < 1)
-            throw new Exception("No column defined.");
-
-        // check if table name exists
-        Set<String> tableNames = JdbcUtils.extractDatabaseMetaData(Objects.requireNonNull(this.jdbcTemplate.getDataSource()), new GetTableNames());
-        if (!tableNames.contains(tableName))
-            throw new Exception("Table name does not exist.");
-
-        // check if the columns exist
-        SqlRowSet oneRowFromTheTable = jdbcTemplate.queryForRowSet("select * from " + tableName + " limit 1");
-        for (String col : cols)
-            oneRowFromTheTable.findColumn(col);
-
-        StringBuilder selectStatementBuilder = new StringBuilder("select ");
-        selectStatementBuilder.append(cols[0]);
-        for (int i = 1; i < cols.length; i++) {
-            selectStatementBuilder.append(", ");
-            selectStatementBuilder.append(cols[i]);
-        }
-        selectStatementBuilder.append(" from ");
-        selectStatementBuilder.append(tableName);
-        return jdbcTemplate.queryForList(selectStatementBuilder.toString());
+    List<String> selectFromDatabase(PreparedStatementCreator selectStatement) {
+        return this.jdbcTemplate.query(selectStatement, new SimpleStringRowMapper());
     }
 
     List<String> selectUserToWhitelistEntriesOfUser(final String username) {

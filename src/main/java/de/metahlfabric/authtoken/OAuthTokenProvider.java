@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 @Lazy
 @Component
 @DependsOn("userDetailsService")
-@ComponentScan(basePackages = {"de.nutrisafe"})
+@ComponentScan(basePackages = {"de.metahlfabric"})
 public class OAuthTokenProvider {
 
     @Value("${security.jwt.token.expire-length:3600000}")
@@ -72,7 +72,7 @@ public class OAuthTokenProvider {
 
     @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private String requestOAuthUsername(String token, Consumer<HttpHeaders> header, LinkedMultiValueMap<String, String> body, String extUsernameKey, String uri) {
-        System.out.println("[NutriSafe REST API] Checking token validity at " + uri);
+        System.out.println("[MF] Checking token validity at " + uri);
         String extUsername = null;
         WebClient.Builder webClientBuilder = WebClient.builder();
         if (header != null)
@@ -92,7 +92,7 @@ public class OAuthTokenProvider {
                 try {
                     exp = response.get("exp").getAsLong() * 1000;
                 } catch (NumberFormatException e) {
-                    System.err.println("[NutriSafe REST API] Could not parse expiration timestamp.");
+                    System.err.println("[MF] Could not parse expiration timestamp.");
                 }
                 persistenceManager.updateTokenOfExternalUser(extUsername, token, exp);
             }

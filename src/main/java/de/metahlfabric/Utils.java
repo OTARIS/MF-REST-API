@@ -56,7 +56,7 @@ public class Utils {
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             return (X509Certificate) certFactory.generateCertificate(inputStream);
         } catch (Exception e) {
-            System.err.println("[NutriSafe REST API] Could not load certificate.");
+            System.err.println("[MF] Could not load certificate.");
             e.printStackTrace();
         }
         return null;
@@ -76,7 +76,7 @@ public class Utils {
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
             return kf.generatePrivate(keySpec);
         } catch (Exception e) {
-            System.err.println("[NutriSafe REST API] Could not load private key.");
+            System.err.println("[MF] Could not load private key.");
             e.printStackTrace();
         }
         return null;
@@ -113,7 +113,7 @@ public class Utils {
                         Pattern.compile("alarm", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE));
 
         } catch (IOException e) {
-            System.err.println("[NutriSafe REST API] Could not prepare the transaction.");
+            System.err.println("[MF] Could not prepare the transaction.");
             e.printStackTrace();
         } finally {
             if (fileInputStream != null)
@@ -141,7 +141,7 @@ public class Utils {
             ret = new String(result, UTF_8);
 
         } catch (IOException | TimeoutException | ContractException | InterruptedException e) {
-            System.err.println("[NutriSafe REST API] Could not submit the transaction.");
+            System.err.println("[MF] Could not submit the transaction.");
             e.printStackTrace();
         }
         return ret;
@@ -162,7 +162,7 @@ public class Utils {
             ret = new String(result, UTF_8);
 
         } catch (IOException | ContractException e) {
-            System.err.println("[NutriSafe REST API] Could not evaluate the transaction.");
+            System.err.println("[MF] Could not evaluate the transaction.");
             e.printStackTrace();
         }
         return ret;

@@ -510,12 +510,9 @@ public class MFRestControllerTest {
 
     @Test
     public void selectDatabaseSuccess() throws Exception {
-        String[] colData = {"username", "password"};
-        body.put("columns", colData);
-        body.put("tableName", "users");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        String result = mockMvc.perform(post("/select?function=selectDatabase")
+        String result = mockMvc.perform(post("/select?what=username")
                 .header("Authorization", "Bearer " + this.token).content(json)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
                 .andDo(print()).andReturn().getResponse().getContentAsString();
@@ -525,10 +522,9 @@ public class MFRestControllerTest {
 
     @Test
     public void selectDatabaseFail_missingAttribute() throws Exception {
-        body.put("tableName", "users");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        String result = mockMvc.perform(post("/select?function=selectDatabase")
+        String result = mockMvc.perform(post("/select")
                 .header("Authorization", "Bearer " + this.token).content(json)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
                 .andDo(print()).andReturn().getResponse().getContentAsString();
@@ -536,6 +532,7 @@ public class MFRestControllerTest {
         System.out.println(result);
     }
 
+    /*
     @Test
     public void selectDatabaseFail_wrongAttribute() throws Exception {
         String[] colData = {"uname", "password"};
@@ -550,4 +547,6 @@ public class MFRestControllerTest {
         Assert.assertNotNull(result);
         System.out.println(result);
     }
+
+     */
 }

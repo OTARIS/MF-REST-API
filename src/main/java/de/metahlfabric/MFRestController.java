@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,12 +28,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
 import static de.metahlfabric.UserDatabaseConfig.*;
@@ -50,6 +54,9 @@ public class MFRestController {
     private Utils helper;
 
     private final ArrayList<DeferredResult<ResponseEntity<String>>> pollRequests = new ArrayList<>();
+
+    private int emitterCnt = 0;
+    private int emitterReady = 0;
 
     // bruteforce protection attributes
     private final HashMap<String, Integer> triesCount = new HashMap<>();
@@ -72,15 +79,16 @@ public class MFRestController {
             UserDetails user = persistenceManager.getCurrentUser();
             if (user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
-            return switch (function) {
-                case "getAllUsers" -> getAllUsers();
-                case "getUserInfo" -> getUserInfo(user.getUsername());
-                case "getUserInfoOfUser" -> getUserInfo(args);
-                case "getWhitelists" -> getWhitelists();
-                case "getWhitelist" -> getWhitelist(args);
-                case "getFunctions" -> getFunctions();
-                case "getUsersByAuthority" -> getUsersByAuthority(args);
-                default -> hyperledgerGet(function, args);
+            return
+                switch (function) {
+                    case "getAllUsers" -> getAllUsers();
+                    case "getUserInfo" -> getUserInfo(user.getUsername());
+                    case "getUserInfoOfUser" -> getUserInfo(args);
+                    case "getWhitelists" -> getWhitelists();
+                    case "getWhitelist" -> getWhitelist(args);
+                    case "getFunctions" -> getFunctions();
+                    case "getUsersByAuthority" -> getUsersByAuthority(args);
+                    default -> hyperledgerGet(function, args);
             };
         } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
             return badRequest().body(e.getMessage());
@@ -88,30 +96,6 @@ public class MFRestController {
             e.printStackTrace();
             return badRequest().build();
         }
-    }
-
-    @PostMapping("/pollingResult")
-    DeferredResult<ResponseEntity<String>> pollingResult() {
-        DeferredResult<ResponseEntity<String>> deferredResult = new DeferredResult<>(Long.MAX_VALUE);
-
-        ForkJoinPool.commonPool().submit(() -> {
-            try {
-                pollRequests.add(deferredResult);
-                while (helper.getAlarmFlag() == null) {
-                    Thread.sleep(1000);
-                }
-            } catch (InterruptedException ignored) {
-            }
-            for (DeferredResult<ResponseEntity<String>> df : pollRequests) {
-                df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
-            }
-            deferredResult.onCompletion(() -> {
-                helper.resetAlarmFlag();
-                pollRequests.clear();
-            });
-        });
-
-        return deferredResult;
     }
 
     @PostMapping(value = "/select", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -136,6 +120,34 @@ public class MFRestController {
         }
     }
 
+    @GetMapping(value = "/events", produces = MediaType.APPLICATION_JSON_VALUE)
+    public SseEmitter handleEvents() {
+        SseEmitter emitter = new SseEmitter();
+        emitterCnt++;
+        emitter.onCompletion(() -> emitterCnt--);
+        getHelper().executorService.execute(() -> {
+            try {
+                while (getHelper().getAlarmFlag() == null) {
+                    emitter.wait(1000L);
+                }
+                emitter.send(ResponseEntity.ok(getHelper().getAlarmFlag()));
+                emitterReady++;
+                while (emitterReady < emitterCnt) {
+                    emitter.wait(10L);
+                }
+                if(getHelper().getAlarmFlag() != null)
+                    getHelper().resetAlarmFlag();
+                if(emitterReady != 0)
+                    emitterReady = 0;
+            } catch (InterruptedException e) {
+                emitter.completeWithError(e);
+            } catch (IOException e) {
+                emitter.complete();
+            }
+        });
+        return emitter;
+    }
+
     @PostMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> submit(@RequestParam String function, @RequestBody(required = false) String body) {
         try {
@@ -144,19 +156,20 @@ public class MFRestController {
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             else {
                 JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
-                return switch (function) {
-                    case "createUser" -> createUser(bodyJson);
-                    case "deleteUser" -> deleteUser(bodyJson);
-                    case "updatePassword" -> updatePassword(user, bodyJson);
-                    case "setRole" -> setRole(bodyJson);
-                    case "createWhitelist" -> createWhitelist(bodyJson);
-                    case "deleteWhitelist" -> deleteWhitelist(bodyJson);
-                    case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
-                    case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
-                    case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
-                    case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
-                    default -> hyperledgerSubmit(function, bodyJson);
-                };
+                return
+                    switch (function) {
+                        case "createUser" -> createUser(bodyJson);
+                        case "deleteUser" -> deleteUser(bodyJson);
+                        case "updatePassword" -> updatePassword(user, bodyJson);
+                        case "setRole" -> setRole(bodyJson);
+                        case "createWhitelist" -> createWhitelist(bodyJson);
+                        case "deleteWhitelist" -> deleteWhitelist(bodyJson);
+                        case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
+                        case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
+                        case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
+                        case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
+                        default -> hyperledgerSubmit(function, bodyJson);
+                    };
             }
         } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
             return badRequest().body(e.getMessage());

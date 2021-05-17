@@ -16,15 +16,22 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
 
+    public ExecutorService executorService = Executors.newCachedThreadPool();
+
     private HyperledgerConfig config;
     private Network network = null;
     private String alarmFlag = null;
+    Consumer<ContractEvent> alarmConsumer = null;
 
     public Utils(HyperledgerConfig config) {
         this.config = config;
@@ -89,6 +96,7 @@ public class Utils {
              * .discovery(): Service discovery for all transaction submissions is enabled.
              */
             if (network == null) {
+                alarmConsumer = null;
                 fileInputStream = new FileInputStream(config.getNetwork());
                 //ClassPathResource classPathResource = new ClassPathResource(config.getNetworkConfigPath());
                 Gateway.Builder builder = Gateway.createBuilder()
@@ -100,6 +108,9 @@ public class Utils {
                 network = gateway.getNetwork(config.getChannel());
             }
             contract = network.getContract(config.getChaincode());
+            if(alarmConsumer == null)
+                alarmConsumer = contract.addContractListener(this::alarmActivated,
+                        Pattern.compile("alarm", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE));
 
         } catch (IOException e) {
             System.err.println("[NutriSafe REST API] Could not prepare the transaction.");
@@ -117,9 +128,6 @@ public class Utils {
         try {
             Contract contract = prepareTransaction();
             if (contract == null) throw new IOException();
-
-            //Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
-            contract.addContractListener(this::alarmActivated);
 
             final byte[] result;
             if (pArgs.size() == 0) {
@@ -172,5 +180,6 @@ public class Utils {
         String pl = new String(e.getPayload().get(), UTF_8);
         JsonObject ret = (JsonObject) JsonParser.parseString(pl);
         alarmFlag = ret.get("key").toString();
+        executorService.notifyAll();
     }
 }

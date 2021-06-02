@@ -1,4 +1,4 @@
-package de.nutrisafe;
+package de.metahlfabric;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -16,15 +16,22 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
 
+    public ExecutorService executorService = Executors.newCachedThreadPool();
+
     private HyperledgerConfig config;
     private Network network = null;
     private String alarmFlag = null;
+    Consumer<ContractEvent> alarmConsumer = null;
 
     public Utils(HyperledgerConfig config) {
         this.config = config;
@@ -49,7 +56,7 @@ public class Utils {
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             return (X509Certificate) certFactory.generateCertificate(inputStream);
         } catch (Exception e) {
-            System.err.println("[NutriSafe REST API] Could not load certificate.");
+            System.err.println("[MF] Could not load certificate.");
             e.printStackTrace();
         }
         return null;
@@ -69,7 +76,7 @@ public class Utils {
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
             return kf.generatePrivate(keySpec);
         } catch (Exception e) {
-            System.err.println("[NutriSafe REST API] Could not load private key.");
+            System.err.println("[MF] Could not load private key.");
             e.printStackTrace();
         }
         return null;
@@ -89,6 +96,7 @@ public class Utils {
              * .discovery(): Service discovery for all transaction submissions is enabled.
              */
             if (network == null) {
+                alarmConsumer = null;
                 fileInputStream = new FileInputStream(config.getNetwork());
                 //ClassPathResource classPathResource = new ClassPathResource(config.getNetworkConfigPath());
                 Gateway.Builder builder = Gateway.createBuilder()
@@ -100,9 +108,12 @@ public class Utils {
                 network = gateway.getNetwork(config.getChannel());
             }
             contract = network.getContract(config.getChaincode());
+            if(alarmConsumer == null)
+                alarmConsumer = contract.addContractListener(this::alarmActivated,
+                        Pattern.compile("alarm", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE));
 
         } catch (IOException e) {
-            System.err.println("[NutriSafe REST API] Could not prepare the transaction.");
+            System.err.println("[MF] Could not prepare the transaction.");
             e.printStackTrace();
         } finally {
             if (fileInputStream != null)
@@ -118,9 +129,6 @@ public class Utils {
             Contract contract = prepareTransaction();
             if (contract == null) throw new IOException();
 
-            //Consumer<ContractEvent> listener = contract.addContractListener(contractEvent -> System.out.println(contractEvent.getName()));
-            contract.addContractListener(this::alarmActivated);
-
             final byte[] result;
             if (pArgs.size() == 0) {
                 result = contract.createTransaction(function)
@@ -133,7 +141,7 @@ public class Utils {
             ret = new String(result, UTF_8);
 
         } catch (IOException | TimeoutException | ContractException | InterruptedException e) {
-            System.err.println("[NutriSafe REST API] Could not submit the transaction.");
+            System.err.println("[MF] Could not submit the transaction.");
             e.printStackTrace();
         }
         return ret;
@@ -154,7 +162,7 @@ public class Utils {
             ret = new String(result, UTF_8);
 
         } catch (IOException | ContractException e) {
-            System.err.println("[NutriSafe REST API] Could not evaluate the transaction.");
+            System.err.println("[MF] Could not evaluate the transaction.");
             e.printStackTrace();
         }
         return ret;
@@ -172,5 +180,6 @@ public class Utils {
         String pl = new String(e.getPayload().get(), UTF_8);
         JsonObject ret = (JsonObject) JsonParser.parseString(pl);
         alarmFlag = ret.get("key").toString();
+        executorService.notifyAll();
     }
 }

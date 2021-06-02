@@ -1,4 +1,4 @@
-package de.nutrisafe.authtoken;
+package de.metahlfabric.authtoken;
 
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ import java.util.List;
 @Lazy
 @Component
 @DependsOn("userDetailsService")
-@ComponentScan(basePackages = {"de.nutrisafe"})
+@ComponentScan(basePackages = {"de.metahlfabric"})
 public class JwtTokenProvider {
 
     @Value("${security.jwt.token.secret-key:secret}")
@@ -72,7 +72,7 @@ public class JwtTokenProvider {
             Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
             return !claims.getBody().getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-            // System.err.println("[NutriSafe REST API] Not an own, password related JWT token");
+            // System.err.println("[MF] Not an own, password related JWT token");
             return false;
         }
     }

@@ -1,22 +1,15 @@
-package de.nutrisafe;
+package de.metahlfabric;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -29,7 +22,7 @@ import java.util.Map;
 //@ComponentScan(basePackages = {"de.nutrisafe"})
 public class Main implements WebMvcConfigurer {
 
-    private final static String NUTRISAFE_PROPERTIES = "NUTRISAFE_PROPERTIES";
+    private final static String MF_PROPERTIES = "MF_PROPERTIES";
     private final static String ORG = "organization";
     private final static String PROPERTIES = "properties_file";
     private final static String PRIVATE_KEY = "private_key";
@@ -49,8 +42,8 @@ public class Main implements WebMvcConfigurer {
     @SuppressFBWarnings({"WMI_WRONG_MAP_ITERATOR"})
     public static void main(String[] args) {
         Map<String, String> env = System.getenv();
-        if(env.containsKey(NUTRISAFE_PROPERTIES))
-            propertiesFile = env.get(NUTRISAFE_PROPERTIES);
+        if(env.containsKey(MF_PROPERTIES))
+            propertiesFile = env.get(MF_PROPERTIES);
 
         // Define Options
         Options options = new Options();
@@ -59,7 +52,7 @@ public class Main implements WebMvcConfigurer {
         mspIdOption.setRequired(false);
         options.addOption(mspIdOption);
 
-        Option propertyOption = new Option("prop", PROPERTIES, true, "Sets the path to the property file. Alternatively, you can use the environment variable '" + NUTRISAFE_PROPERTIES + "'.");
+        Option propertyOption = new Option("prop", PROPERTIES, true, "Sets the path to the property file. Alternatively, you can use the environment variable '" + MF_PROPERTIES + "'.");
         propertyOption.setRequired(propertiesFile == null);
         options.addOption(propertyOption);
 
@@ -102,7 +95,7 @@ public class Main implements WebMvcConfigurer {
             SpringApplication.run(Main.class, args);
         } catch(ParseException e) {
             System.err.println(e.getMessage());
-            formatter.printHelp("NutriSafe REST API", options);
+            formatter.printHelp("MetaHL Fabric", options);
         }
     }
 
@@ -118,7 +111,8 @@ public class Main implements WebMvcConfigurer {
                 new PropertySourcesPlaceholderConfigurer();
         if(propertiesFile != null) {
             Resource[] resources = new Resource[ ]
-                    { new ClassPathResource("application.properties"), new FileSystemResource(propertiesFile)  };
+                    { new ClassPathResource("application.properties"), new ClassPathResource("application.yml"),
+                            new FileSystemResource(propertiesFile)  };
             properties.setLocations(resources);
         }
         properties.setIgnoreResourceNotFound(false);

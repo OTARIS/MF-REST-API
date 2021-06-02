@@ -1,19 +1,21 @@
-package de.nutrisafe;
+package de.metahlfabric;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
-import de.nutrisafe.authtoken.JwtTokenProvider;
+import de.metahlfabric.authtoken.JwtTokenProvider;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,15 +29,19 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
+import java.sql.PreparedStatement;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
-import static de.nutrisafe.UserDatabaseConfig.*;
+import static de.metahlfabric.UserDatabaseConfig.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.ResponseEntity.badRequest;
 import static org.springframework.http.ResponseEntity.ok;
@@ -65,11 +71,19 @@ import static org.springframework.http.ResponseEntity.ok;
 @RestController
 @DependsOn("jwtTokenProvider")
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
 public class MFRestController {
 
     private Utils helper;
 
     private final ArrayList<DeferredResult<ResponseEntity<String>>> pollRequests = new ArrayList<>();
+    private final static String USERNAME_PARAM = "username";
+    private final static String ROLE_PARAM = "role";
+    private final static String WHITELIST_PARAM = "whitelist";
+    private final static String FUNCTION_PARAM = "function";
+
+    private int emitterCnt = 0;
+    private int emitterReady = 0;
 
     // bruteforce protection attributes
     private final HashMap<String, Integer> triesCount = new HashMap<>();
@@ -92,15 +106,16 @@ public class MFRestController {
             UserDetails user = persistenceManager.getCurrentUser();
             if (user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
-            return switch (function) {
-                case "getAllUsers" -> getAllUsers();
-                case "getUserInfo" -> getUserInfo(user.getUsername());
-                case "getUserInfoOfUser" -> getUserInfo(args);
-                case "getWhitelists" -> getWhitelists();
-                case "getWhitelist" -> getWhitelist(args);
-                case "getFunctions" -> getFunctions();
-                case "getUsersByAuthority" -> getUsersByAuthority(args);
-                default -> hyperledgerGet(function, args);
+            return
+                switch (function) {
+                    case "getAllUsers" -> getAllUsers();
+                    case "getUserInfo" -> getUserInfo(user.getUsername());
+                    case "getUserInfoOfUser" -> getUserInfo(args);
+                    case "getWhitelists" -> getWhitelists();
+                    case "getWhitelist" -> getWhitelist(args);
+                    case "getFunctions" -> getFunctions();
+                    case "getUsersByAuthority" -> getUsersByAuthority(args);
+                    default -> hyperledgerGet(function, args);
             };
         } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
             return badRequest().body(e.getMessage());
@@ -110,42 +125,22 @@ public class MFRestController {
         }
     }
 
-    @PostMapping("/pollingResult")
-    DeferredResult<ResponseEntity<String>> pollingResult() {
-        DeferredResult<ResponseEntity<String>> deferredResult = new DeferredResult<>(Long.MAX_VALUE);
-
-        ForkJoinPool.commonPool().submit(() -> {
-            try {
-                pollRequests.add(deferredResult);
-                while (helper.getAlarmFlag() == null) {
-                    Thread.sleep(1000);
-                }
-            } catch (InterruptedException ignored) {
-            }
-            for (DeferredResult<ResponseEntity<String>> df : pollRequests) {
-                df.setResult(ResponseEntity.ok(helper.getAlarmFlag()));
-            }
-            deferredResult.onCompletion(() -> {
-                helper.resetAlarmFlag();
-                pollRequests.clear();
-            });
-        });
-
-        return deferredResult;
-    }
-
     @PostMapping(value = "/select", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> select(@RequestParam String function, @RequestBody String body) {
+    public ResponseEntity<?> select(@RequestParam String what, @RequestBody String where) {
         try {
             UserDetails user = persistenceManager.getCurrentUser();
             if (user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             else {
-                JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
-                return switch (function) {
-                    case "selectChaincode" -> selectChaincode(bodyJson);
-                    case "selectDatabase" -> selectDatabase(bodyJson);
-                    default -> throw new IllegalStateException("Unexpected value: " + function);
+                JsonObject bodyJson = JsonParser.parseString(where).getAsJsonObject();
+                if(what == null || what.length() == 0)
+                    throw new RequiredException("Parameter \"what\" required!");
+                return switch (what) {
+                    case USERNAME_PARAM -> selectUsername(bodyJson);
+                    case ROLE_PARAM -> selectRole(bodyJson);
+                    case WHITELIST_PARAM -> selectWhitelist(bodyJson);
+                    case FUNCTION_PARAM -> selectFunction(bodyJson);
+                    default -> selectChaincode(what, bodyJson);
                 };
             }
         } catch (RequiredException | UsernameNotFoundException e) {
@@ -156,6 +151,34 @@ public class MFRestController {
         }
     }
 
+    @GetMapping(value = "/events", produces = MediaType.APPLICATION_JSON_VALUE)
+    public SseEmitter handleEvents() {
+        SseEmitter emitter = new SseEmitter();
+        emitterCnt++;
+        emitter.onCompletion(() -> emitterCnt--);
+        getHelper().executorService.execute(() -> {
+            try {
+                while (getHelper().getAlarmFlag() == null) {
+                    emitter.wait(1000L);
+                }
+                emitter.send(ResponseEntity.ok(getHelper().getAlarmFlag()));
+                emitterReady++;
+                while (emitterReady < emitterCnt) {
+                    emitter.wait(10L);
+                }
+                if(getHelper().getAlarmFlag() != null)
+                    getHelper().resetAlarmFlag();
+                if(emitterReady != 0)
+                    emitterReady = 0;
+            } catch (InterruptedException e) {
+                emitter.completeWithError(e);
+            } catch (IOException e) {
+                emitter.complete();
+            }
+        });
+        return emitter;
+    }
+
     @PostMapping(value = "/submit", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> submit(@RequestParam String function, @RequestBody(required = false) String body) {
         try {
@@ -164,19 +187,20 @@ public class MFRestController {
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             else {
                 JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
-                return switch (function) {
-                    case "createUser" -> createUser(bodyJson);
-                    case "deleteUser" -> deleteUser(bodyJson);
-                    case "updatePassword" -> updatePassword(user, bodyJson);
-                    case "setRole" -> setRole(bodyJson);
-                    case "createWhitelist" -> createWhitelist(bodyJson);
-                    case "deleteWhitelist" -> deleteWhitelist(bodyJson);
-                    case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
-                    case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
-                    case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
-                    case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
-                    default -> hyperledgerSubmit(function, bodyJson);
-                };
+                return
+                    switch (function) {
+                        case "createUser" -> createUser(bodyJson);
+                        case "deleteUser" -> deleteUser(bodyJson);
+                        case "updatePassword" -> updatePassword(user, bodyJson);
+                        case "setRole" -> setRole(bodyJson);
+                        case "createWhitelist" -> createWhitelist(bodyJson);
+                        case "deleteWhitelist" -> deleteWhitelist(bodyJson);
+                        case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
+                        case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
+                        case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
+                        case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
+                        default -> hyperledgerSubmit(function, bodyJson);
+                    };
             }
         } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
             return badRequest().body(e.getMessage());
@@ -287,29 +311,345 @@ public class MFRestController {
         }
     }
 
-    private ResponseEntity<?> selectDatabase(JsonObject bodyJson) {
+    private ResponseEntity<?> selectUsername(JsonObject where) {
         try {
-            if (bodyJson.has("columns") && bodyJson.has("tableName")) {
-                List<Map<String, Object>> result;
-                String tableName = Objects.requireNonNull(bodyJson.get("tableName").getAsString());
-                JsonArray jsonArray = Objects.requireNonNull(bodyJson.getAsJsonArray("columns"));
-                String[] cols = new String[jsonArray.size()];
-                for (int i = 0; i < jsonArray.size(); i++) {
-                    cols[i] = Objects.requireNonNull(jsonArray.get(i)).getAsString();
+            boolean hasUsername = where.has(USERNAME_PARAM);
+            boolean hasRole = where.has(ROLE_PARAM);
+            boolean hasWhitelist = where.has(WHITELIST_PARAM);
+            boolean hasFunction = where.has(FUNCTION_PARAM);
+            boolean mustSeparate = false;
+
+            // Build select statement String
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct username from");
+            if(!(hasRole || hasWhitelist || hasFunction)) {
+                selectStatementBuilder.append(" users");
+            } else {
+                if (hasRole) {
+                    selectStatementBuilder.append(" authorities");
+                    mustSeparate = true;
                 }
-                result = persistenceManager.selectFromDatabase(cols, tableName);
-                return ok(result);
-            } else return badRequest().body("Column(s) and table name are required");
+                if (hasWhitelist || hasFunction) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(",");
+                    selectStatementBuilder.append(" user_to_whitelist");
+                }
+                if (hasFunction) {
+                    selectStatementBuilder.append(", function");
+                }
+            }
+            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
+                selectStatementBuilder.append(" where");
+                mustSeparate = false;
+                if (hasUsername) {
+                    if (hasWhitelist || hasFunction)
+                        selectStatementBuilder.append(" user_to_whitelist.username LIKE ?");
+                    else if (hasRole)
+                        selectStatementBuilder.append(" authorities.username LIKE ?");
+                    else
+                        selectStatementBuilder.append(" users.username LIKE ?");
+                    mustSeparate = true;
+                }
+                if (hasRole) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    else
+                        mustSeparate = true;
+                    selectStatementBuilder.append(" authorities.authority LIKE ?");
+                }
+                if (hasWhitelist) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    else
+                        mustSeparate = true;
+                    selectStatementBuilder.append(" user_to_whitelist.whitelist LIKE ?");
+                }
+                if (hasFunction) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    selectStatementBuilder.append(" function.name LIKE ? and function.whitelist = user_to_whitelist.whitelist");
+                }
+                if (hasRole && (hasWhitelist || hasFunction))
+                    selectStatementBuilder.append(" and user_to_whitelist.username = authorities.username");
+            }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
+            PreparedStatementCreator selectStatement = connection -> {
+                PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
+                int i = 1;
+                if(hasUsername) {
+                    preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
+                    i++;
+                }
+                if(hasRole) {
+                    preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
+                    i++;
+                }
+                if(hasWhitelist) {
+                    preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
+                    i++;
+                }
+                if(hasFunction) {
+                    preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
+                }
+                return preparedStatement;
+            };
+            return ok(persistenceManager.selectFromDatabase(selectStatement));
         } catch (Exception e) {
             e.printStackTrace();
             return badRequest().body("Error in request attributes");
         }
     }
 
-
-    private ResponseEntity<?> selectChaincode(JsonObject bodyJson) {
+    private ResponseEntity<?> selectRole(JsonObject where) {
         try {
-            String[] args = {bodyJson.toString()};
+            boolean hasUsername = where.has(USERNAME_PARAM);
+            boolean hasRole = where.has(ROLE_PARAM);
+            boolean hasWhitelist = where.has(WHITELIST_PARAM);
+            boolean hasFunction = where.has(FUNCTION_PARAM);
+            boolean mustSeparate = false;
+
+            // Build select statement String
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct authority from authorities");
+            if(hasWhitelist || hasFunction) {
+                selectStatementBuilder.append(", user_to_whitelist");
+            }
+            if(hasFunction) {
+                selectStatementBuilder.append(", function");
+            }
+            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
+                selectStatementBuilder.append(" where");
+                if (hasUsername) {
+                    selectStatementBuilder.append(" authorities.username LIKE ?");
+                    mustSeparate = true;
+                }
+                if (hasRole) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    else
+                        mustSeparate = true;
+                    selectStatementBuilder.append(" authorities.authority LIKE ?");
+                }
+                if (hasWhitelist) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    else
+                        mustSeparate = true;
+                    selectStatementBuilder.append(" user_to_whitelist.whitelist LIKE ?");
+                }
+                if (hasFunction) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    selectStatementBuilder.append(" function.name LIKE ? and function.whitelist = user_to_whitelist.whitelist");
+                }
+                if (hasWhitelist || hasFunction)
+                    selectStatementBuilder.append(" and user_to_whitelist.username = authorities.username");
+            }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
+            PreparedStatementCreator selectStatement = connection -> {
+                PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
+                int i = 1;
+                if(hasUsername) {
+                    preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
+                    i++;
+                }
+                if(hasRole) {
+                    preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
+                    i++;
+                }
+                if(hasWhitelist) {
+                    preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
+                    i++;
+                }
+                if(hasFunction) {
+                    preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
+                }
+                return preparedStatement;
+            };
+            return ok(persistenceManager.selectFromDatabase(selectStatement));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return badRequest().body("Error in request attributes");
+        }
+    }
+
+    private ResponseEntity<?> selectWhitelist(JsonObject where) {
+        try {
+            boolean hasUsername = where.has(USERNAME_PARAM);
+            boolean hasRole = where.has(ROLE_PARAM);
+            boolean hasWhitelist = where.has(WHITELIST_PARAM);
+            boolean hasFunction = where.has(FUNCTION_PARAM);
+            boolean mustSeparate = false;
+
+            // Build select statement String
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct");
+            if(hasUsername || hasRole) {
+                selectStatementBuilder.append(" user_to_whitelist.whitelist from user_to_whitelist");
+                mustSeparate = true;
+                if(hasRole) {
+                    selectStatementBuilder.append(", authorities");
+                }
+            } else if(!hasFunction) {
+                selectStatementBuilder.append(" whitelist.name from whitelist");
+            }
+            if(hasFunction) {
+                if (mustSeparate)
+                    selectStatementBuilder.append(",");
+                else
+                    selectStatementBuilder.append(" function.whitelist from");
+                selectStatementBuilder.append(" function");
+            }
+            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
+                selectStatementBuilder.append(" where");
+                mustSeparate = false;
+                if (hasUsername) {
+                    selectStatementBuilder.append(" user_to_whitelist.username LIKE ?");
+                    mustSeparate = true;
+                }
+                if (hasRole) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    else
+                        mustSeparate = true;
+                    selectStatementBuilder.append(" authorities.authority LIKE ? and authorities.username = user_to_whitelist.username");
+                }
+                if (hasWhitelist) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    else
+                        mustSeparate = true;
+                    if (hasUsername || hasRole)
+                        selectStatementBuilder.append(" user_to_whitelist.whitelist LIKE ?");
+                    else if (hasFunction)
+                        selectStatementBuilder.append(" function.whitelist LIKE ?");
+                    else
+                        selectStatementBuilder.append(" whitelist.name LIKE ?");
+                }
+                if (hasFunction) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    selectStatementBuilder.append(" function.name LIKE ?");
+                    if (hasUsername || hasRole)
+                        selectStatementBuilder.append(" and function.whitelist = user_to_whitelist.whitelist");
+                }
+            }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
+            PreparedStatementCreator selectStatement = connection -> {
+                PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
+                int i = 1;
+                if(hasUsername) {
+                    preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
+                    i++;
+                }
+                if(hasRole) {
+                    preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
+                    i++;
+                }
+                if(hasWhitelist) {
+                    preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
+                    i++;
+                }
+                if(hasFunction) {
+                    preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
+                }
+                return preparedStatement;
+            };
+            return ok(persistenceManager.selectFromDatabase(selectStatement));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return badRequest().body("Error in request attributes");
+        }
+    }
+
+    private ResponseEntity<?> selectFunction(JsonObject where) {
+        try {
+            boolean hasUsername = where.has(USERNAME_PARAM);
+            boolean hasRole = where.has(ROLE_PARAM);
+            boolean hasWhitelist = where.has(WHITELIST_PARAM);
+            boolean hasFunction = where.has(FUNCTION_PARAM);
+            boolean mustSeparate = false;
+
+            // Build select statement String
+            StringBuilder selectStatementBuilder = new StringBuilder("select distinct name from function");
+            if(hasUsername || hasRole) {
+                selectStatementBuilder.append(", user_to_whitelist");
+            }
+            if(hasRole) {
+                selectStatementBuilder.append(", authorities");
+            }
+            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
+                selectStatementBuilder.append(" where");
+                if (hasUsername) {
+                    selectStatementBuilder.append(" user_to_whitelist.username LIKE ?");
+                    mustSeparate = true;
+                }
+                if (hasRole) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    else
+                        mustSeparate = true;
+                    selectStatementBuilder.append(" authorities.authority LIKE ? and authorities.username = user_to_whitelist.username");
+                }
+                if (hasWhitelist) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    else
+                        mustSeparate = true;
+                    selectStatementBuilder.append(" function.whitelist LIKE ?");
+                }
+                if (hasFunction) {
+                    if (mustSeparate)
+                        selectStatementBuilder.append(" and");
+                    selectStatementBuilder.append(" function.name LIKE ?");
+                }
+                if (hasUsername || hasRole)
+                    selectStatementBuilder.append(" and user_to_whitelist.whitelist = function.whitelist");
+            }
+            System.out.println("[MF] Calling: " + selectStatementBuilder);
+            PreparedStatementCreator selectStatement = connection -> {
+                PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
+                int i = 1;
+                if(hasUsername) {
+                    preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
+                    i++;
+                }
+                if(hasRole) {
+                    preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
+                    i++;
+                }
+                if(hasWhitelist) {
+                    preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
+                    i++;
+                }
+                if(hasFunction) {
+                    preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
+                }
+                return preparedStatement;
+            };
+            return ok(persistenceManager.selectFromDatabase(selectStatement));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return badRequest().body("Error in request attributes");
+        }
+    }
+
+    private ResponseEntity<?> selectChaincode(String what, JsonObject bodyJson) {
+        try {
+            StringBuilder selectStatementBuilder = new StringBuilder("{ \"selector\":{\"");
+            selectStatementBuilder.append(what);
+            if(bodyJson.isJsonNull() || bodyJson.keySet().isEmpty())
+                selectStatementBuilder.append("\"}}");
+            else {
+                selectStatementBuilder.append("\":{");
+                for(String key : bodyJson.keySet()) {
+                    selectStatementBuilder.append("\"");
+                    selectStatementBuilder.append(key);
+                    selectStatementBuilder.append("\":\"");
+                    selectStatementBuilder.append(bodyJson.get(key));
+                    selectStatementBuilder.append("\",");
+                }
+                selectStatementBuilder.deleteCharAt(selectStatementBuilder.length() - 1);
+                selectStatementBuilder.append("}}}");
+            }
+            String[] args = { selectStatementBuilder.toString() };
             String response = getHelper().evaluateTransaction("queryChaincodeByQueryString", args);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
             return ok(responseJson.get("response").toString());

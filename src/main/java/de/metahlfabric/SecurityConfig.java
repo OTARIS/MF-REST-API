@@ -1,10 +1,10 @@
-package de.nutrisafe;
+package de.metahlfabric;
 
-import de.nutrisafe.authtoken.JwtTokenProvider;
-import de.nutrisafe.authtoken.OAuthTokenProvider;
-import de.nutrisafe.authtoken.TokenConfigurer;
-import de.nutrisafe.functionrights.FunctionRightConfigurer;
-import de.nutrisafe.functionrights.FunctionRightProvider;
+import de.metahlfabric.authtoken.JwtTokenProvider;
+import de.metahlfabric.authtoken.OAuthTokenProvider;
+import de.metahlfabric.authtoken.TokenConfigurer;
+import de.metahlfabric.functionrights.FunctionRightConfigurer;
+import de.metahlfabric.functionrights.FunctionRightProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
@@ -54,6 +54,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/get").hasAuthority("ROLE_USER")
                 .antMatchers("/select").hasAuthority("ROLE_USER")
                 .antMatchers("/submit").hasAuthority("ROLE_USER")
+                .antMatchers("/events").hasAuthority("ROLE_USER")
         ).formLogin().disable().csrf().disable().apply(new TokenConfigurer(jwtTokenProvider, oAuthTokenProvider)).and()
                 //.oauth2ResourceServer(oauth2 -> oauth2.jwt())
                 .apply(new FunctionRightConfigurer(functionRightProvider));

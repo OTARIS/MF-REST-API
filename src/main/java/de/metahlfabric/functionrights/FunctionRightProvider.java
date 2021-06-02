@@ -1,4 +1,4 @@
-package de.nutrisafe.functionrights;
+package de.metahlfabric.functionrights;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,7 @@ import java.sql.PreparedStatement;
 @Lazy
 @Component
 @DependsOn("jdbcTemplate")
-@ComponentScan(basePackages = {"de.nutrisafe"})
+@ComponentScan(basePackages = {"de.metahlfabric"})
 @SuppressFBWarnings("OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE")
 public class FunctionRightProvider {
 
@@ -48,7 +48,7 @@ public class FunctionRightProvider {
                     return true;
                 }
             } catch (Exception e) {
-                System.err.println("Could not load user details!");
+                System.err.println("[MF] Could not load user details!");
                 e.printStackTrace();
             }
         } else

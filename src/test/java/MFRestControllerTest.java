@@ -1,7 +1,8 @@
 import com.google.gson.Gson;
-import de.nutrisafe.MFRestController;
-import de.nutrisafe.UserDatabaseConfig;
-import de.nutrisafe.authtoken.JwtTokenProvider;
+import de.metahlfabric.MFRestController;
+import de.metahlfabric.Main;
+import de.metahlfabric.UserDatabaseConfig;
+import de.metahlfabric.authtoken.JwtTokenProvider;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -26,9 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = {MFRestController.class, UserDatabaseConfig.class})
+@SpringBootTest(classes = {MFRestController.class, UserDatabaseConfig.class, Main.class})
 @AutoConfigureMockMvc
-@Import(de.nutrisafe.authtoken.JwtTokenProvider.class)
+@Import(de.metahlfabric.authtoken.JwtTokenProvider.class)
 @Transactional
 @Sql({"classpath:test_init.sql"})
 public class MFRestControllerTest {
@@ -509,12 +510,9 @@ public class MFRestControllerTest {
 
     @Test
     public void selectDatabaseSuccess() throws Exception {
-        String[] colData = {"username", "password"};
-        body.put("columns", colData);
-        body.put("tableName", "users");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        String result = mockMvc.perform(post("/select?function=selectDatabase")
+        String result = mockMvc.perform(post("/select?what=username")
                 .header("Authorization", "Bearer " + this.token).content(json)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().isOk())
                 .andDo(print()).andReturn().getResponse().getContentAsString();
@@ -524,10 +522,9 @@ public class MFRestControllerTest {
 
     @Test
     public void selectDatabaseFail_missingAttribute() throws Exception {
-        body.put("tableName", "users");
         Gson gson = new Gson();
         String json = gson.toJson(body);
-        String result = mockMvc.perform(post("/select?function=selectDatabase")
+        String result = mockMvc.perform(post("/select")
                 .header("Authorization", "Bearer " + this.token).content(json)
                 .accept(MediaType.APPLICATION_JSON_VALUE)).andExpect(status().is4xxClientError())
                 .andDo(print()).andReturn().getResponse().getContentAsString();
@@ -535,6 +532,7 @@ public class MFRestControllerTest {
         System.out.println(result);
     }
 
+    /*
     @Test
     public void selectDatabaseFail_wrongAttribute() throws Exception {
         String[] colData = {"uname", "password"};
@@ -549,4 +547,6 @@ public class MFRestControllerTest {
         Assert.assertNotNull(result);
         System.out.println(result);
     }
+
+     */
 }

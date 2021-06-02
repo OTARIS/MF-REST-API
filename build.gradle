@@ -17,7 +17,7 @@ plugins {
     id "com.github.spotbugs" version "4.6.0"
 }
 
-group = 'de.nutrisafe'
+group = 'de.metahlfabric'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '14'
 
@@ -40,7 +40,7 @@ spotbugsMain {
         xml.enabled = false
         html.enabled = true
         //ignoreFailures = true
-        //onlyAnalyze = ['de.nutrisafe.Main']
+        //onlyAnalyze = ['de.metahlfabric.Main']
     }
 }
 dependencies {
@@ -80,7 +80,7 @@ dependencies {
 
 
 bootJar {
-    mainClassName = 'de.nutrisafe.Main'
+    mainClassName = 'de.metahlfabric.Main'
 }
 
 test {

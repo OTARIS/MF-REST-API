@@ -1,4 +1,4 @@
-package de.nutrisafe;
+package de.metahlfabric;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -161,7 +161,7 @@ public class UserDatabaseConfig {
         String databaseName = "/" + (Main.dbName == null ? dbConfig.getDbName() : Main.dbName);
         int port = dbConfig.getDbPort();
         if (port < 1 || port > 65535) {
-            System.err.println("[NutriSafe REST API] Warning: Invalid port number! Fallback to 5432");
+            System.err.println("[MF] Warning: Invalid port number! Fallback to 5432");
             port = 5432;
         }
         String driver = dbConfig.getDbDriver().toLowerCase();
@@ -206,9 +206,9 @@ public class UserDatabaseConfig {
             URI uri = URI.create(tmpHost);
             url.append(uri.toString());
             url.append(":");
-            System.out.println("[NutriSafe REST API] Current DB host URI: " + uri.toString());
+            System.out.println("[MF] Current DB host URI: " + uri.toString());
         } catch (Exception e) {
-            System.err.println("[NutriSafe REST API] Warning: Invalid host address! Fallback to //localhost");
+            System.err.println("[MF] Warning: Invalid host address! Fallback to //localhost");
             url.append("//localhost:");
         }
         url.append(port);
@@ -216,7 +216,7 @@ public class UserDatabaseConfig {
         dataSource.setUrl(url.toString());
         dataSource.setUsername(Main.dbUser == null ? dbConfig.getDbUser() : Main.dbUser);
         dataSource.setPassword(Main.dbPass == null ? dbConfig.getDbPassword() : Main.dbPass);
-        System.out.println("Initialize " + databaseName + "\n  with user "
+        System.out.println("[MF] Initialize " + databaseName + "\n  with user "
                 + dbConfig.getDbUser());
         return dataSource;
     }

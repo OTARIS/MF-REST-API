@@ -46,6 +46,26 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.http.ResponseEntity.badRequest;
 import static org.springframework.http.ResponseEntity.ok;
 
+/**
+ * This class handles all REST Calls on the API by using the
+ * {@link org.springframework.web.bind.annotation.RestController RestController} tag of Spring®.
+ *
+ * @author Dennis Lamken, Tobias Wagner, Kathrin Kleinhammer
+ *
+ * Copyright 2021 OTARIS Interactive Services GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 @Lazy
 @CrossOrigin()
 @RestController
@@ -229,11 +249,11 @@ public class MFRestController {
 
     private Utils getHelper() {
         if (helper == null) {
-            if(Main.org != null)
+            if (Main.org != null)
                 config.setOrg(Main.org);
-            if(Main.privateKey != null)
+            if (Main.privateKey != null)
                 config.setPk(Main.privateKey);
-            if(Main.adminCert != null)
+            if (Main.adminCert != null)
                 config.setCert(Main.adminCert);
             helper = new Utils(config);
         }

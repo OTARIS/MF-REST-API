@@ -2,7 +2,7 @@
 
 # REST API #
 
-The MetaHL Fabric REST API is an interface to a Hyperledger® Fabric network for organizations. It originates from the [NutriSafe](https://nutrisafe.de/ "NutriSafe") research project and is part of its official toolkit. You can read, write, update, create and delete objects in the blockchain network with simple commands and even define new object types (so called meta objects). Furthermore different roles from different use cases of an organization can be mapped to users with customizable access rights for all chaincode functions.
+The MetaHL Fabric REST API is an interface to a Hyperledger® Fabric network for organizations. It originates from the [NutriSafe](https://nutrisafe.de/ "NutriSafe") research project and is part of its official toolkit. Combined with the [MetaHL Fabric Chain Code](https://github.com/OTARIS/MF-Chaincode/ "MetaHL Fabric Chain Code") you can read, write, update, create and delete objects in the blockchain network with simple commands and even define new object types (so called meta objects). Furthermore different roles from different use cases of an organization can be mapped to users with customizable access rights via the REST API for all chaincode functions.
 
 Possible use cases include, but are not limited to:
 * read access for the company's management dashboard
@@ -21,14 +21,14 @@ We continuously work on and extend the REST API. Combined with the [MetaHL Fabri
 
 ## Installation ##
 
-Before you start the REST API make sure your network is set up. You can find  However we do not leave you alone with this task, so here is your checklist:
+Before you start the REST API make sure your network is set up. Check out the [MetaHL Fabric Chain Code](https://github.com/OTARIS/MF-Chaincode/ "MetaHL Fabric Chain Code") for more information. In order to run the MetaHL Fabric REST API, here is your checklist:
 
 1. Configure your own [**connection json file**](https://github.com/hyperledger/fabric-gateway-java/blob/master/src/test/java/org/hyperledger/fabric/gateway/connection.json "Example file for a connection configuration") for the Hyperledger Fabric Gateway API with details about the peers that you want to connect to.
 2. Install and run an empty [**PostgreSQL database**](https://www.postgresql.org/download/ "PostgreSQL download") for the REST API's user management and remember your credentials.
 3. Setup a custom profile for your REST API by simply filling out this [**template**](https://github.com/OTARIS/MF-REST-API/blob/master/templates/application.yml "Example profile"). This will contain your registered organization name, your database credentials, the name of your connection file and some more network information like your channel name and your certificate and private key file names.
 4. Start the REST-API with the environment variable "**MF_PROPERTIES**" set. This variable needs to contain the path to your application.yml (the file of step 3).
 
-You should be ready to go!
+Now you should be ready to go!
 
 ## Usage ##
 
@@ -86,7 +86,15 @@ The following example commands are directly handled by the REST API:
 		.../get?function=getWhitelists
 
 ### POST .../select ###
-This command select different information from the chaincode by applying a query. This allows to search for objects which comply with a certain filter strategy.
+This command selects different information from the chaincode or the user database by applying a query. This allows to search for objects and user info which comply with a certain filter strategy. You need to send the what parameter in order to specify what you are looking for. Then define conditions for filtering the result in a JSON-format in the body content. These conditions are "and"-combined. For example the following request would ask for all usernames starting with "a" and having any role that contains the word "admin":
+
+		.../select?what=username
+		
+	<!-- next code line -->
+
+	- Example body content:
+
+			{'username':'a%','role':'%admin%'}
 
 ### POST .../submit ###
 This command writes information to the chaincode or to the REST API's user management. Arguments are given as JSON-formatted body content.

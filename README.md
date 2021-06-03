@@ -21,7 +21,7 @@ We continuously work on and extend the REST API. Combined with the [MetaHL Fabri
 
 ## Installation ##
 
-We plan on making a simple setup for this (a docker container or installer), but for now you need to set it up by yourself. However we do not leave you alone with this task, so here is your checklist:
+Before you start the REST API make sure your network is set up. You can find  However we do not leave you alone with this task, so here is your checklist:
 
 1. Configure your own [**connection json file**](https://github.com/hyperledger/fabric-gateway-java/blob/master/src/test/java/org/hyperledger/fabric/gateway/connection.json "Example file for a connection configuration") for the Hyperledger Fabric Gateway API with details about the peers that you want to connect to.
 2. Install and run an empty [**PostgreSQL database**](https://www.postgresql.org/download/ "PostgreSQL download") for the REST API's user management and remember your credentials.

@@ -1,8 +1,8 @@
-![NutriSafe](https://www.nutrisafe.de/wp-content/themes/nutrisafe/img/NutriSafe_Logo.svg "NutriSafe Logo")
+![MetaHL Fabric](https://github.com/OTARIS/MF-REST-API/blob/master/logo.png "MetaHL Fabric Logo")
 
 # REST API #
 
-The NutriSafe REST API is an interface to the NutriSafe Distributed Ledger Network for organizations. You can read, write, update, create and delete objects in the blockchain network with simple commands and even define new object types (so called meta objects). Furthermore different roles from different use cases of an organization can be mapped to users with customizable access rights for all chaincode functions.
+The MetaHL Fabric REST API is an interface to a Hyperledger® Fabric network for organizations. It originates from the [NutriSafe](https://nutrisafe.de/ "NutriSafe") research project and is part of its official toolkit. You can read, write, update, create and delete objects in the blockchain network with simple commands and even define new object types (so called meta objects). Furthermore different roles from different use cases of an organization can be mapped to users with customizable access rights for all chaincode functions.
 
 Possible use cases include, but are not limited to:
 * read access for the company's management dashboard
@@ -12,7 +12,7 @@ Possible use cases include, but are not limited to:
 
 ## Features ##
 
-We continuously work on and extend the REST API. Combined with the NutriSafe Distributed Ledger Network the following incomplete feature list might give you at least an idea about the capabilities:
+We continuously work on and extend the REST API. Combined with the [MetaHL Fabric Chain Code](https://github.com/OTARIS/MF-Chaincode/ "MetaHL Fabric Chain Code") the following incomplete feature list might give you at least an idea about the capabilities:
 * creating, deleting, updating and reading objects from the chain
 * definition of new object types and possible attributes (meta objects)
 * user management with roles and user assignable whitelists for restricting chaincode calls

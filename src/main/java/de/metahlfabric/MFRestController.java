@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.PreparedStatementCreator;
@@ -37,9 +36,6 @@ import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.sql.PreparedStatement;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 
 import static de.metahlfabric.UserDatabaseConfig.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -51,15 +47,15 @@ import static org.springframework.http.ResponseEntity.ok;
  * {@link org.springframework.web.bind.annotation.RestController RestController} tag of Spring®.
  *
  * @author Dennis Lamken, Tobias Wagner, Kathrin Kleinhammer
- *
+ * <p>
  * Copyright 2021 OTARIS Interactive Services GmbH
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -107,16 +103,16 @@ public class MFRestController {
             if (user == null)
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             return
-                switch (function) {
-                    case "getAllUsers" -> getAllUsers();
-                    case "getUserInfo" -> getUserInfo(user.getUsername());
-                    case "getUserInfoOfUser" -> getUserInfo(args);
-                    case "getWhitelists" -> getWhitelists();
-                    case "getWhitelist" -> getWhitelist(args);
-                    case "getFunctions" -> getFunctions();
-                    case "getUsersByAuthority" -> getUsersByAuthority(args);
-                    default -> hyperledgerGet(function, args);
-            };
+                    switch (function) {
+                        case "getAllUsers" -> getAllUsers();
+                        case "getUserInfo" -> getUserInfo(user.getUsername());
+                        case "getUserInfoOfUser" -> getUserInfo(args);
+                        case "getWhitelists" -> getWhitelists();
+                        case "getWhitelist" -> getWhitelist(args);
+                        case "getFunctions" -> getFunctions();
+                        case "getUsersByAuthority" -> getUsersByAuthority(args);
+                        default -> hyperledgerGet(function, args);
+                    };
         } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
             return badRequest().body(e.getMessage());
         } catch (Exception e) {
@@ -133,7 +129,7 @@ public class MFRestController {
                 throw new UsernameNotFoundException("No valid session. Please authenticate again.");
             else {
                 JsonObject bodyJson = JsonParser.parseString(where).getAsJsonObject();
-                if(what == null || what.length() == 0)
+                if (what == null || what.length() == 0)
                     throw new RequiredException("Parameter \"what\" required!");
                 return switch (what) {
                     case USERNAME_PARAM -> selectUsername(bodyJson);
@@ -166,9 +162,9 @@ public class MFRestController {
                 while (emitterReady < emitterCnt) {
                     emitter.wait(10L);
                 }
-                if(getHelper().getAlarmFlag() != null)
+                if (getHelper().getAlarmFlag() != null)
                     getHelper().resetAlarmFlag();
-                if(emitterReady != 0)
+                if (emitterReady != 0)
                     emitterReady = 0;
             } catch (InterruptedException e) {
                 emitter.completeWithError(e);
@@ -188,19 +184,19 @@ public class MFRestController {
             else {
                 JsonObject bodyJson = JsonParser.parseString(body).getAsJsonObject();
                 return
-                    switch (function) {
-                        case "createUser" -> createUser(bodyJson);
-                        case "deleteUser" -> deleteUser(bodyJson);
-                        case "updatePassword" -> updatePassword(user, bodyJson);
-                        case "setRole" -> setRole(bodyJson);
-                        case "createWhitelist" -> createWhitelist(bodyJson);
-                        case "deleteWhitelist" -> deleteWhitelist(bodyJson);
-                        case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
-                        case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
-                        case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
-                        case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
-                        default -> hyperledgerSubmit(function, bodyJson);
-                    };
+                        switch (function) {
+                            case "createUser" -> createUser(bodyJson);
+                            case "deleteUser" -> deleteUser(bodyJson);
+                            case "updatePassword" -> updatePassword(user, bodyJson);
+                            case "setRole" -> setRole(bodyJson);
+                            case "createWhitelist" -> createWhitelist(bodyJson);
+                            case "deleteWhitelist" -> deleteWhitelist(bodyJson);
+                            case "linkFunctionToWhitelist" -> linkFunctionToWhitelist(bodyJson);
+                            case "unlinkFunctionFromWhitelist" -> unlinkFunctionFromWhitelist(bodyJson);
+                            case "linkUserToWhitelist" -> linkUserToWhitelist(bodyJson);
+                            case "unlinkUserFromWhitelist" -> unlinkUserFromWhitelist(bodyJson);
+                            default -> hyperledgerSubmit(function, bodyJson);
+                        };
             }
         } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
             return badRequest().body(e.getMessage());
@@ -321,7 +317,7 @@ public class MFRestController {
 
             // Build select statement String
             StringBuilder selectStatementBuilder = new StringBuilder("select distinct username from");
-            if(!(hasRole || hasWhitelist || hasFunction)) {
+            if (!(hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" users");
             } else {
                 if (hasRole) {
@@ -337,7 +333,7 @@ public class MFRestController {
                     selectStatementBuilder.append(", function");
                 }
             }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
+            if ((hasUsername || hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" where");
                 mustSeparate = false;
                 if (hasUsername) {
@@ -375,19 +371,19 @@ public class MFRestController {
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
-                if(hasUsername) {
+                if (hasUsername) {
                     preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
                     i++;
                 }
-                if(hasRole) {
+                if (hasRole) {
                     preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
                     i++;
                 }
-                if(hasWhitelist) {
+                if (hasWhitelist) {
                     preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
                     i++;
                 }
-                if(hasFunction) {
+                if (hasFunction) {
                     preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
                 }
                 return preparedStatement;
@@ -409,13 +405,13 @@ public class MFRestController {
 
             // Build select statement String
             StringBuilder selectStatementBuilder = new StringBuilder("select distinct authority from authorities");
-            if(hasWhitelist || hasFunction) {
+            if (hasWhitelist || hasFunction) {
                 selectStatementBuilder.append(", user_to_whitelist");
             }
-            if(hasFunction) {
+            if (hasFunction) {
                 selectStatementBuilder.append(", function");
             }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
+            if ((hasUsername || hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" where");
                 if (hasUsername) {
                     selectStatementBuilder.append(" authorities.username LIKE ?");
@@ -447,19 +443,19 @@ public class MFRestController {
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
-                if(hasUsername) {
+                if (hasUsername) {
                     preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
                     i++;
                 }
-                if(hasRole) {
+                if (hasRole) {
                     preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
                     i++;
                 }
-                if(hasWhitelist) {
+                if (hasWhitelist) {
                     preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
                     i++;
                 }
-                if(hasFunction) {
+                if (hasFunction) {
                     preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
                 }
                 return preparedStatement;
@@ -481,23 +477,23 @@ public class MFRestController {
 
             // Build select statement String
             StringBuilder selectStatementBuilder = new StringBuilder("select distinct");
-            if(hasUsername || hasRole) {
+            if (hasUsername || hasRole) {
                 selectStatementBuilder.append(" user_to_whitelist.whitelist from user_to_whitelist");
                 mustSeparate = true;
-                if(hasRole) {
+                if (hasRole) {
                     selectStatementBuilder.append(", authorities");
                 }
-            } else if(!hasFunction) {
+            } else if (!hasFunction) {
                 selectStatementBuilder.append(" whitelist.name from whitelist");
             }
-            if(hasFunction) {
+            if (hasFunction) {
                 if (mustSeparate)
                     selectStatementBuilder.append(",");
                 else
                     selectStatementBuilder.append(" function.whitelist from");
                 selectStatementBuilder.append(" function");
             }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
+            if ((hasUsername || hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" where");
                 mustSeparate = false;
                 if (hasUsername) {
@@ -535,19 +531,19 @@ public class MFRestController {
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
-                if(hasUsername) {
+                if (hasUsername) {
                     preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
                     i++;
                 }
-                if(hasRole) {
+                if (hasRole) {
                     preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
                     i++;
                 }
-                if(hasWhitelist) {
+                if (hasWhitelist) {
                     preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
                     i++;
                 }
-                if(hasFunction) {
+                if (hasFunction) {
                     preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
                 }
                 return preparedStatement;
@@ -569,13 +565,13 @@ public class MFRestController {
 
             // Build select statement String
             StringBuilder selectStatementBuilder = new StringBuilder("select distinct name from function");
-            if(hasUsername || hasRole) {
+            if (hasUsername || hasRole) {
                 selectStatementBuilder.append(", user_to_whitelist");
             }
-            if(hasRole) {
+            if (hasRole) {
                 selectStatementBuilder.append(", authorities");
             }
-            if((hasUsername || hasRole || hasWhitelist || hasFunction)) {
+            if ((hasUsername || hasRole || hasWhitelist || hasFunction)) {
                 selectStatementBuilder.append(" where");
                 if (hasUsername) {
                     selectStatementBuilder.append(" user_to_whitelist.username LIKE ?");
@@ -607,19 +603,19 @@ public class MFRestController {
             PreparedStatementCreator selectStatement = connection -> {
                 PreparedStatement preparedStatement = connection.prepareStatement(selectStatementBuilder.toString());
                 int i = 1;
-                if(hasUsername) {
+                if (hasUsername) {
                     preparedStatement.setString(i, where.get(USERNAME_PARAM).getAsString());
                     i++;
                 }
-                if(hasRole) {
+                if (hasRole) {
                     preparedStatement.setString(i, where.get(ROLE_PARAM).getAsString());
                     i++;
                 }
-                if(hasWhitelist) {
+                if (hasWhitelist) {
                     preparedStatement.setString(i, where.get(WHITELIST_PARAM).getAsString());
                     i++;
                 }
-                if(hasFunction) {
+                if (hasFunction) {
                     preparedStatement.setString(i, where.get(FUNCTION_PARAM).getAsString());
                 }
                 return preparedStatement;
@@ -633,24 +629,25 @@ public class MFRestController {
 
     private ResponseEntity<?> selectChaincode(String what, JsonObject bodyJson) {
         try {
-            StringBuilder selectStatementBuilder = new StringBuilder("{ \"selector\":{\"");
-            selectStatementBuilder.append(what);
-            if(bodyJson.isJsonNull() || bodyJson.keySet().isEmpty())
-                selectStatementBuilder.append("\"}}");
+            JsonObject query = new JsonObject();
+            JsonObject selector = new JsonObject();
+            if (bodyJson.isJsonNull() || bodyJson.keySet().isEmpty())
+                selector.addProperty("productName", what);
             else {
-                selectStatementBuilder.append("\":{");
-                for(String key : bodyJson.keySet()) {
-                    selectStatementBuilder.append("\"");
-                    selectStatementBuilder.append(key);
-                    selectStatementBuilder.append("\":\"");
-                    selectStatementBuilder.append(bodyJson.get(key));
-                    selectStatementBuilder.append("\",");
+                JsonArray andArray = new JsonArray();
+                JsonObject productName = new JsonObject();
+                productName.addProperty("productName", what);
+                andArray.add(productName);
+                for (String key : bodyJson.keySet()) {
+                    JsonObject property = new JsonObject();
+                    property.add(key, bodyJson.get(key));
+                    andArray.add(property);
                 }
-                selectStatementBuilder.deleteCharAt(selectStatementBuilder.length() - 1);
-                selectStatementBuilder.append("}}}");
+                selector.add("$and", andArray);
             }
-            String[] args = { selectStatementBuilder.toString() };
-            String response = getHelper().evaluateTransaction("queryChaincodeByQueryString", args);
+            query.add("selector", selector);
+            String response = getHelper().evaluateTransaction("queryChaincodeByQueryString",
+                    new String[]{query.toString()});
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
             return ok(responseJson.get("response").toString());
         } catch (UsernameNotFoundException e) {

@@ -98,6 +98,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('changeOwner', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('addPredecessor', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('updateAttribute', '" + DEFAULT_WRITE_WHITELIST + "')");
+            jdbcTemplate.execute("insert into function(name, whitelist) values ('updatePrivateAttribute', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('addRuleNameAndCondition', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteRuleForProduct', '" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('activateAlarm', '" + DEFAULT_WRITE_WHITELIST + "')");

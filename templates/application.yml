@@ -4,9 +4,9 @@ cert: # your certificate
 pk: # your private key
 
 # Network Info
-network: basic-network # path to your connection.json
+network: connection.json # path to your connection.json
 channel: trackandtrace # The channel that you want to interact with
-chaincode: MFContract # the chaincode name (default for MetaHL Fabric is MFContract)
+chaincode: MF-Chain-Code # the chaincode name
 
 # Database Info
 dbName: mfrestdb # the name of your user database

@@ -21,13 +21,13 @@ We continuously work on and extend the REST API. Combined with the [MetaHL Fabri
 
 ## Installation ##
 
-Before you start the REST API make sure your network is set up. Check out the [MetaHL Fabric Chain Code](https://github.com/OTARIS/MF-Chaincode/ "MetaHL Fabric Chain Code") for more information. 
+Before you start the REST API make sure your network is set up. Check out the [MetaHL Fabric Chain Code](https://github.com/OTARIS/MF-Chaincode/ "MetaHL Fabric Chain Code") for more information.
 
 Please make sure to change the values for the postgres- and admin-password in `mf.env`. To start the MetaHL Fabric REST API in docker-compose, simply run the startup script as root. This assumes that you are runnin MetaHL Fabric from the same machine as you are running the Hyperledger Network.
 
 `sudo ./start.sh`
 
-If you want to run the MetaHL Fabric REST API without docker, here is your checklist:
+If you want to run the MetaHL Fabric REST API without docker-compose, here is your checklist:
 
 1. Configure your own [**connection json file**](https://github.com/hyperledger/fabric-gateway-java/blob/master/src/test/java/org/hyperledger/fabric/gateway/connection.json "Example file for a connection configuration") for the Hyperledger Fabric Gateway API with details about the peers that you want to connect to.
 2. Install and run an empty [**PostgreSQL database**](https://www.postgresql.org/download/ "PostgreSQL download") for the REST API's user management and remember your credentials.

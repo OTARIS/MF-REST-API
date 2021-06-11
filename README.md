@@ -43,7 +43,7 @@ The REST API offers the following basic commands:
 ### POST .../auth ###
 This command is used for your authentication. Send a POST request with a JSON object in its body containing your username and password in order to receive a JWT token. You need this token for the authorization of other API calls.
 
-The default credentials are `admin:12345678` for an admin account, `nutriuser:12345678` for a regular account and `public:12345678` for a read only account.
+The default credentials are `admin` with the password that you set above using "**MF_ADMIN_PW**".
 
 **Example:**
 

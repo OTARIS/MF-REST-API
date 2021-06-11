@@ -1,6 +1,6 @@
 # Member Info
 org: DeoniMSP # your member name
-cert: # your certificate 
+cert: # your certificate
 pk: # your private key
 
 # Network Info
@@ -13,5 +13,5 @@ dbName: mfrestdb # the name of your user database
 dbDriver: postgresql # the database driver
 dbUser: postgres # the name of a privileged database user
 dbPassword: GRm%m5cgTmw3S&kjxV # the pass of this privileged database user
-dbHost: localhost/ # the host adress of your user database
+dbHost: db # the host adress of your user database. Use localhost if not using docker-compose to run the mf-rest-api
 dbPort: 5432 # the port of your user database

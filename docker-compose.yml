@@ -2,18 +2,23 @@ version: '3'
 services:
   mfrestapi:
     build: .
+    env_file:
+      - mf.env
     depends_on:
       - db
+    volumes:
+      - ./config/application.yml:/app/config/application.yml
     links:
       - db:db
     networks:
       - mf
   db:
     image: postgres:alpine
+    env_file:
+      - mf.env
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-      - /etc/crystalcastle/postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:

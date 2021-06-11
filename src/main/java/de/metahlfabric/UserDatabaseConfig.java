@@ -2,10 +2,12 @@ package de.metahlfabric;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowCountCallbackHandler;
@@ -26,6 +28,7 @@ import java.net.URI;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class configures the database and provides access to it.
@@ -56,6 +59,7 @@ public class UserDatabaseConfig {
     public final static String ROLE_ADMIN = "ROLE_ADMIN";
     public final static String ROLE_MEMBER = "ROLE_MEMBER";
     public final static String ROLE_USER = "ROLE_USER";
+    private final static String MF_ADMIN_PW = "MF_ADMIN_PW";
 
     @Autowired DatabaseConfig dbConfig;
 
@@ -134,37 +138,15 @@ public class UserDatabaseConfig {
             System.out.println("done!");
         }
 
-        // TODO: creation of test users... needs to be deleted for production!
         UserDetailsManager userDetailsManager = userDetailsManager();
-        if (!userDetailsManager.userExists("nutriuser")) {
-            List<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority(ROLE_USER));
-            authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
-            UserDetails user = new org.springframework.security.core.userdetails.User("nutriuser",
-                    new BCryptPasswordEncoder().encode("12345678"), authorities);
-            userDetailsManager.createUser(user);
-            jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('nutriuser', '" + DEFAULT_READ_WHITELIST + "')");
-            jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('nutriuser', '" + DEFAULT_WRITE_WHITELIST + "')");
-            Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
-        if (!userDetailsManager.userExists("public")) {
-            List<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority(ROLE_USER));
-            UserDetails user = new org.springframework.security.core.userdetails.User("public",
-                    new BCryptPasswordEncoder().encode("12345678"), authorities);
-            userDetailsManager.createUser(user);
-            jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('public', '" + DEFAULT_READ_WHITELIST + "')");
-            Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
         if (!userDetailsManager.userExists("admin")) {
             List<GrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
             authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
             authorities.add(new SimpleGrantedAuthority(ROLE_ADMIN));
+            Map<String, String> env = System.getenv();
             UserDetails user = new org.springframework.security.core.userdetails.User("admin",
-                    new BCryptPasswordEncoder().encode("12345678"), authorities);
+                    new BCryptPasswordEncoder().encode(env.get(MF_ADMIN_PW) == null ? "12345678" : env.get(MF_ADMIN_PW)), authorities);
             userDetailsManager.createUser(user);
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('admin', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('admin', '" + DEFAULT_WRITE_WHITELIST + "')");
@@ -172,7 +154,6 @@ public class UserDatabaseConfig {
             Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-        // TODO: end of test users.. don't forget to delete this!
 
         return jdbcTemplate;
     }

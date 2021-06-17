@@ -23,16 +23,16 @@ We continuously work on and extend the REST API. Combined with the [MetaHL Fabri
 
 Before you start the REST API make sure your network is set up. Check out the [MetaHL Fabric Chain Code](https://github.com/OTARIS/MF-Chaincode/ "MetaHL Fabric Chain Code") for more information.
 
-Please make sure to change the values for the postgres- and admin-password in `mf.env`. To start the MetaHL Fabric REST API in docker-compose, simply run the startup script as root. This assumes that you are runnin MetaHL Fabric from the same machine as you are running the Hyperledger Network.
+If you want to try the REST API with the locally running [NutriSafe Network](https://github.com/NutriSafe-DLT/nutrisafe/tree/master/fabric-version2x "NutriSafe Network"), we have prepared a simple setup script for you. You only need to make sure to change the values for the postgres- and admin-password in `mf.env` and then run the startup script as root. This script assumes that you are running MetaHL Fabric from the same machine as you are running the Hyperledger Network.
 
 `sudo ./start.sh`
 
-If you want to run the MetaHL Fabric REST API without docker-compose, here is your checklist:
+If you want to run the MetaHL Fabric REST API with another setup, here is your checklist:
 
-1. Configure your own [**connection json file**](https://github.com/hyperledger/fabric-gateway-java/blob/master/src/test/java/org/hyperledger/fabric/gateway/connection.json "Example file for a connection configuration") for the Hyperledger Fabric Gateway API with details about the peers that you want to connect to.
+1. Configure your own [**connection json file**](https://github.com/hyperledger/fabric-gateway-java/blob/master/src/test/java/org/hyperledger/fabric/gateway/connection.json "Example file for a connection configuration") for the Hyperledger Fabric Gateway with details about the peers that you want to connect to.
 2. Install and run an empty [**PostgreSQL database**](https://www.postgresql.org/download/ "PostgreSQL download") for the REST API's user management and remember your credentials.
 3. Setup a custom profile for your REST API by simply filling out this [**template**](https://github.com/OTARIS/MF-REST-API/blob/master/templates/application.yml "Example profile"). This will contain your registered organization name, your database credentials, the name of your connection file and some more network information like your channel name and your certificate and private key file names.
-4. Start the REST-API with the environment variables "**MF_PROPERTIES**" and "**MF_ADMIN_PW**" set. This variable needs to contain the path to your application.yml (the file of step 3).
+4. Start the REST-API with the environment variable "**MF_PROPERTIES**" set. This variable needs to contain the path to your application.yml (the file of step 3).
 
 Now you should be ready to go!
 
@@ -98,11 +98,10 @@ This command selects different information from the chaincode or the user databa
 
 		.../select?what=username
 
-	<!-- next code line -->
+<!-- next code line -->
+- Example body content:
 
-	- Example body content:
-
-			{'username':'a%','role':'%admin%'}
+		{'username':'a%','role':'%admin%'}
 
 ### POST .../submit ###
 This command writes information to the chaincode or to the REST API's user management. Arguments are given as JSON-formatted body content.
@@ -268,4 +267,8 @@ The following example commands are directly handled by the REST API:
 
 ## Third party ##
 
-TODO!
+- Hyperledger® Fabric Gateway API (Apache 2.0)
+- Spring® Framework (Apache 2.0)
+- JJWT (Apache 2.0)
+- Google® GSON (Apache 2.0)
+- Apache® Commons CLI (Apache 2.0)

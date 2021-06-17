@@ -27,7 +27,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.FileNotFoundException;
@@ -71,8 +70,6 @@ import static org.springframework.http.ResponseEntity.ok;
 public class MFRestController {
 
     private Utils helper;
-
-    private final ArrayList<DeferredResult<ResponseEntity<String>>> pollRequests = new ArrayList<>();
     private final static String USERNAME_PARAM = "username";
     private final static String ROLE_PARAM = "role";
     private final static String WHITELIST_PARAM = "whitelist";
@@ -113,7 +110,7 @@ public class MFRestController {
                         case "getUsersByAuthority" -> getUsersByAuthority(args);
                         default -> hyperledgerGet(function, args);
                     };
-        } catch (RequiredException | InvalidException | UsernameNotFoundException e) {
+        } catch (RequiredException | UsernameNotFoundException e) {
             return badRequest().body(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
@@ -210,8 +207,8 @@ public class MFRestController {
     public ResponseEntity<?> auth(@RequestBody String body) {
         try {
             JsonObject jsonObject = JsonParser.parseString(body).getAsJsonObject();
-            String username = retrieveUsername(jsonObject, true, true);
-            String password = retrievePassword(jsonObject, true);
+            String username = retrieveUsername(jsonObject, true);
+            String password = retrievePassword(jsonObject);
             // bruteforce protection
             if (lastTry.get(username) != null && triesCount.get(username) != null
                     && lastTry.get(username) + 10000 < System.currentTimeMillis()
@@ -256,7 +253,7 @@ public class MFRestController {
         return helper;
     }
 
-    private ResponseEntity<?> hyperledgerGet(String function, String[] args) throws Exception {
+    private ResponseEntity<?> hyperledgerGet(String function, String[] args) {
         String response = getHelper().evaluateTransaction(function, args);
         JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
         if (responseJson.get("status").toString().equals("\"200\""))
@@ -290,7 +287,7 @@ public class MFRestController {
                     pArgsByteMap.put(entry.getKey(), entry.getValue().getBytes(UTF_8));
                 }
             }
-            String response = getHelper().submitTransaction(function, attributesToPass.toArray(new String[attributesToPass.size()]), pArgsByteMap);
+            String response = getHelper().submitTransaction(function, attributesToPass.toArray(new String[0]), pArgsByteMap);
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
 
             if (responseJson.get("status").toString().equals("\"200\"")) {
@@ -728,7 +725,7 @@ public class MFRestController {
     }
 
     private ResponseEntity<?> unlinkFunctionFromWhitelist(JsonObject bodyJson) throws InvalidException {
-        String function = retrieveFunction(bodyJson, true);
+        String function = retrieveFunction(bodyJson);
         String whitelist = retrieveWhitelist(bodyJson, true, true);
         if (!persistenceManager.functionToWhitelistEntryExists(function, whitelist))
             throw new InvalidException(function + " is already unlinked from " + whitelist);
@@ -738,7 +735,7 @@ public class MFRestController {
 
     private ResponseEntity<?> linkFunctionToWhitelist(JsonObject bodyJson) throws InvalidException {
         String whitelist = retrieveWhitelist(bodyJson, true, true);
-        String function = retrieveFunction(bodyJson, true);
+        String function = retrieveFunction(bodyJson);
         if (persistenceManager.functionToWhitelistEntryExists(function, whitelist))
             throw new InvalidException(function + " is already linked to " + whitelist + ".");
         persistenceManager.insertFunctionToWhitelistEntry(function, whitelist);
@@ -762,7 +759,7 @@ public class MFRestController {
     }
 
     private ResponseEntity<?> linkUserToWhitelist(JsonObject bodyJson) throws InvalidException {
-        String username = retrieveUsername(bodyJson, true, true);
+        String username = retrieveUsername(bodyJson, true);
         String whitelist = retrieveWhitelist(bodyJson, true, true);
         if (persistenceManager.userToWhitelistExists(username, whitelist))
             throw new InvalidException(username + " is already linked to " + whitelist + ".");
@@ -771,7 +768,7 @@ public class MFRestController {
     }
 
     private ResponseEntity<?> unlinkUserFromWhitelist(JsonObject bodyJson) throws InvalidException {
-        String username = retrieveUsername(bodyJson, true, true);
+        String username = retrieveUsername(bodyJson, true);
         String whitelist = retrieveWhitelist(bodyJson, true, true);
         if (!persistenceManager.userToWhitelistExists(username, whitelist))
             throw new InvalidException(username + " is already unlinked from " + whitelist + ".");
@@ -780,7 +777,7 @@ public class MFRestController {
     }
 
     private ResponseEntity<?> deleteUser(JsonObject bodyJson) throws InvalidException {
-        String username = retrieveUsername(bodyJson, true, true);
+        String username = retrieveUsername(bodyJson, true);
         persistenceManager.deleteUserToWhitelistEntriesOfUser(username);
         persistenceManager.deleteExternalUserOfUser(username);
         userDetailsManager.deleteUser(username);
@@ -789,7 +786,7 @@ public class MFRestController {
 
     @SuppressFBWarnings({"SF_SWITCH_FALLTHROUGH", "SF_SWITCH_NO_DEFAULT"})
     private ResponseEntity<?> createUser(JsonObject bodyJson) throws InvalidException {
-        String username = retrieveUsername(bodyJson, true, false);
+        String username = retrieveUsername(bodyJson, false);
         if (userDetailsManager.userExists(username))
             throw new InvalidException(username + " already exists.");
         boolean isOAuth = retrieveIsOAuth(bodyJson);
@@ -797,7 +794,7 @@ public class MFRestController {
         String hashedExtUsername;
         if (isOAuth) {
             password = "";
-            String extUsername = retrieveExternalUsername(bodyJson, true, false);
+            String extUsername = retrieveExternalUsername(bodyJson);
             try {
                 hashedExtUsername = persistenceManager.getSHA256Hashed(extUsername);
                 if (persistenceManager.IsExternalUsernameUsed(hashedExtUsername))
@@ -806,7 +803,7 @@ public class MFRestController {
                 throw new InvalidException("Could not parse external username.");
             }
         } else {
-            password = new BCryptPasswordEncoder().encode(retrievePassword(bodyJson, true));
+            password = new BCryptPasswordEncoder().encode(retrievePassword(bodyJson));
             hashedExtUsername = "";
         }
 
@@ -852,7 +849,7 @@ public class MFRestController {
     private ResponseEntity<?> updatePassword(UserDetails user, JsonObject bodyJson) throws InvalidException {
         if (retrieveIsOAuth(bodyJson)) {
             try {
-                String extUser = retrieveExternalUsername(bodyJson, true, false);
+                String extUser = retrieveExternalUsername(bodyJson);
                 String hashedExtUser = persistenceManager.getSHA256Hashed(extUser);
                 if (persistenceManager.IsExternalUsernameUsed(hashedExtUser))
                     throw new InvalidException(extUser + " is already used by another account.");
@@ -866,7 +863,7 @@ public class MFRestController {
                 throw new InvalidException("Could not parse external username.");
             }
         } else {
-            String password = retrievePassword(bodyJson, true);
+            String password = retrievePassword(bodyJson);
             try {
                 userDetailsManager.updateUser(new org.springframework.security.core.userdetails.User(user.getUsername(),
                         new BCryptPasswordEncoder().encode(password), user.getAuthorities()));
@@ -881,7 +878,7 @@ public class MFRestController {
 
     @SuppressFBWarnings({"SF_SWITCH_FALLTHROUGH", "SF_SWITCH_NO_DEFAULT"})
     private ResponseEntity<?> setRole(JsonObject bodyJson) throws InvalidException {
-        String username = retrieveUsername(bodyJson, true, true);
+        String username = retrieveUsername(bodyJson, true);
         String newRole = retrieveRole(bodyJson, true);
         String oldRole = getRole(username);
         if (oldRole.equals(newRole))
@@ -939,12 +936,10 @@ public class MFRestController {
 
     /* Parsing body content */
 
-    private String retrieveFunction(JsonObject bodyJson, boolean required) throws InvalidException {
+    private String retrieveFunction(JsonObject bodyJson) throws InvalidException {
         if (bodyJson.has("function")) {
             return bodyJson.get("function").toString().replace("\"", "");
-        } else if (required)
-            throw new InvalidException("Function required.");
-        else return null;
+        } else throw new InvalidException("Function required.");
     }
 
     private String retrieveRole(JsonObject bodyJson, boolean required) throws InvalidException {
@@ -971,7 +966,7 @@ public class MFRestController {
         else return whitelist;
     }
 
-    private String retrieveUsername(JsonObject bodyJson, boolean required, boolean existing) throws InvalidException {
+    private String retrieveUsername(JsonObject bodyJson, boolean existing) throws InvalidException {
         String username;
         if (bodyJson.has("username"))
             username = bodyJson.get("username").toString().replace("\"", "");
@@ -979,15 +974,13 @@ public class MFRestController {
             username = bodyJson.get("user").toString().replace("\"", "");
         else if (bodyJson.has("name"))
             username = bodyJson.get("name").toString().replace("\"", "");
-        else if (required)
-            throw new RequiredException("Username required.");
-        else return null;
+        else throw new RequiredException("Username required.");
         if (existing && !userDetailsManager.userExists(username))
             throw new InvalidException("Username " + username + " does not exist.");
         else return username;
     }
 
-    private String retrieveExternalUsername(JsonObject bodyJson, boolean required, boolean existing) throws InvalidException {
+    private String retrieveExternalUsername(JsonObject bodyJson) {
         String username;
         if (bodyJson.has("ext_username"))
             username = bodyJson.get("ext_username").toString().replace("\"", "");
@@ -995,27 +988,23 @@ public class MFRestController {
             username = bodyJson.get("ext_user").toString().replace("\"", "");
         else if (bodyJson.has("ext_name"))
             username = bodyJson.get("ext_name").toString().replace("\"", "");
-        else if (required)
-            throw new RequiredException("External username required.");
-        else return null;
-        if (existing && persistenceManager.getUsernameOfExternalUser(username) == null)
-            throw new InvalidException("External username " + username + " does not exist.");
-        else return username;
+        else throw new RequiredException("External username required.");
+        return username;
     }
 
     private boolean retrieveIsOAuth(JsonObject bodyJson) {
         return bodyJson.has("oauth") && bodyJson.get("oauth").getAsBoolean();
     }
 
-    private String retrievePassword(JsonObject bodyJson, boolean required) throws InvalidException {
-        String password = null;
+    private String retrievePassword(JsonObject bodyJson) throws InvalidException {
+        String password;
         if (bodyJson.has("password"))
             password = bodyJson.get("password").toString().replace("\"", "");
         else if (bodyJson.has("pass"))
             password = bodyJson.get("pass").toString().replace("\"", "");
-        else if (required)
+        else
             throw new RequiredException("Password required.");
-        if (password != null && password.length() < 8)
+        if (password.length() < 8)
             throw new InvalidException("Passwords must be at least 8 characters long.");
         return password;
     }

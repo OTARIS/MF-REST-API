@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import de.metahlfabric.PersistenceManager;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
@@ -30,15 +29,15 @@ import java.util.function.Consumer;
  * Authenticates a session token of external user credentials by checking against Google OAuth or an own OAuth server.
  *
  * @author Dennis Lamken, Kathrin Kleinhammer
- *
+ * <p>
  * Copyright 2021 OTARIS Interactive Services GmbH
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,8 +50,6 @@ import java.util.function.Consumer;
 @ComponentScan(basePackages = {"de.metahlfabric"})
 public class OAuthTokenProvider {
 
-    @Value("${security.jwt.token.expire-length:3600000}")
-    private long validityInMilliseconds = 3600000; // 1h
     @Autowired
     private UserDetailsService userDetailsService;
     @Autowired
@@ -107,6 +104,8 @@ public class OAuthTokenProvider {
             JsonObject response = new Gson().fromJson(rawResponse, JsonObject.class);
             if (response != null && response.has(extUsernameKey)) {
                 extUsername = persistenceManager.getSHA256Hashed(response.get(extUsernameKey).getAsString());
+                // 1h
+                long validityInMilliseconds = 3600000;
                 long exp = System.currentTimeMillis() + validityInMilliseconds;
                 try {
                     exp = response.get("exp").getAsLong() * 1000;

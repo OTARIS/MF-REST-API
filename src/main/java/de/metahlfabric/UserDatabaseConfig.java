@@ -2,12 +2,10 @@ package de.metahlfabric;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.RowCountCallbackHandler;
@@ -34,15 +32,15 @@ import java.util.Map;
  * This class configures the database and provides access to it.
  *
  * @author Dennis Lamken, Tobias Wagner, Kathrin Kleinhammer
- *
+ * <p>
  * Copyright 2021 OTARIS Interactive Services GmbH
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,7 +59,8 @@ public class UserDatabaseConfig {
     public final static String ROLE_USER = "ROLE_USER";
     private final static String MF_ADMIN_PW = "MF_ADMIN_PW";
 
-    @Autowired DatabaseConfig dbConfig;
+    @Autowired
+    DatabaseConfig dbConfig;
 
     @Lazy
     @Bean
@@ -77,7 +76,7 @@ public class UserDatabaseConfig {
         jdbcTemplate.execute("create table if not exists external_users (username varchar(128) references users(username), extusername varchar(128), token varchar(2048) not null, valid_until timestamp not null)");
 
         // check for existence of default whitelists
-        if (!whitelistExists(DEFAULT_READ_WHITELIST, jdbcTemplate)) {
+        if (notWhitelistExists(DEFAULT_READ_WHITELIST, jdbcTemplate)) {
             System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default read whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('objectExists', '" + DEFAULT_READ_WHITELIST + "')");
@@ -93,7 +92,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('selectChaincode', '" + DEFAULT_READ_WHITELIST + "')");
             System.out.println("done!");
         }
-        if (!whitelistExists(DEFAULT_WRITE_WHITELIST, jdbcTemplate)) {
+        if (notWhitelistExists(DEFAULT_WRITE_WHITELIST, jdbcTemplate)) {
             System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default write whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_WRITE_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('deleteObject', '" + DEFAULT_WRITE_WHITELIST + "')");
@@ -110,7 +109,7 @@ public class UserDatabaseConfig {
             jdbcTemplate.execute("insert into function(name, whitelist) values ('exportDataToAuthPDC', '" + DEFAULT_WRITE_WHITELIST + "')");
             System.out.println("done!");
         }
-        if (!whitelistExists(DEFAULT_ADMIN_WHITELIST, jdbcTemplate)) {
+        if (notWhitelistExists(DEFAULT_ADMIN_WHITELIST, jdbcTemplate)) {
             System.out.print("[NutriSafe REST API] UserDatabaseConfig: No default admin whitelist found: Creating new list... ");
             jdbcTemplate.execute("insert into whitelist(name) values ('" + DEFAULT_ADMIN_WHITELIST + "')");
             jdbcTemplate.execute("insert into function(name, whitelist) values ('META_createSampleData', '" + DEFAULT_ADMIN_WHITELIST + "')");
@@ -169,36 +168,36 @@ public class UserDatabaseConfig {
         }
         String driver = dbConfig.getDbDriver().toLowerCase();
         StringBuilder url = new StringBuilder("jdbc:");
-        if(driver.contains("mysql")) {
+        if (driver.contains("mysql")) {
             dataSource.setDriverClassName("com.mysql.jdbc.Driver");
             url.append("mysql:");
-        } else if(driver.contains("maria")) {
+        } else if (driver.contains("maria")) {
             dataSource.setDriverClassName("org.mariadb.jdbc.Driver");
             url.append("mariadb:");
-        } else if(driver.contains("db2")) {
+        } else if (driver.contains("db2")) {
             dataSource.setDriverClassName("com.ibm.db2.jcc.DB2Driver");
             url.append("db2:");
-        } else if(driver.contains("sap") || driver.contains("hana")) {
+        } else if (driver.contains("sap") || driver.contains("hana")) {
             dataSource.setDriverClassName("com.sap.db.jdbc.Driver");
             url.append("sap:");
-        } else if(driver.contains("informix")) {
+        } else if (driver.contains("informix")) {
             dataSource.setDriverClassName("com.informix.jdbc.IfxDriver");
             url.append("informix-sqli:");
         } else {
-            if(!driver.contains("postgre"))
+            if (!driver.contains("postgre"))
                 System.err.println("[NutriSafe REST API] Warning: Invalid or unsupported database driver name! Fallback to PostgreSQL driver.");
             dataSource.setDriverClassName("org.postgresql.Driver");
             url.append("postgresql:");
         }
         try {
             String tmpHost = dbConfig.getDbHost();
-            if(tmpHost.charAt(0) != '/')
+            if (tmpHost.charAt(0) != '/')
                 url.append("/");
-            if(tmpHost.charAt(1) != '/')
+            if (tmpHost.charAt(1) != '/')
                 url.append("/");
-            if(tmpHost.endsWith("/")) {
+            if (tmpHost.endsWith("/")) {
                 int z = tmpHost.length() - 2;
-                for(int i = z; i > 0; i--) {
+                for (int i = z; i > 0; i--) {
                     if (tmpHost.charAt(i) != '/')
                         break;
                     else
@@ -238,7 +237,7 @@ public class UserDatabaseConfig {
         return new JdbcUserDetailsManager(dataSource());
     }
 
-    private boolean whitelistExists(String whitelist, JdbcTemplate jdbcTemplate) {
+    private boolean notWhitelistExists(String whitelist, JdbcTemplate jdbcTemplate) {
         RowCountCallbackHandler countCallback = new RowCountCallbackHandler();
         PreparedStatementCreator whitelistSelectStatement = connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement("select * from whitelist where name = ?");
@@ -246,6 +245,6 @@ public class UserDatabaseConfig {
             return preparedStatement;
         };
         jdbcTemplate.query(whitelistSelectStatement, countCallback);
-        return countCallback.getRowCount() > 0;
+        return countCallback.getRowCount() <= 0;
     }
 }

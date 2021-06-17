@@ -1,6 +1,7 @@
 package de.metahlfabric;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.apache.commons.cli.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -13,7 +14,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.apache.commons.cli.*;
 
 import java.util.Map;
 
@@ -22,15 +22,15 @@ import java.util.Map;
  * and then starts the Spring® Application.
  *
  * @author Dennis Lamken, Tobias Wagner, Kathrin Kleinhammer
- *
+ * <p>
  * Copyright 2021 OTARIS Interactive Services GmbH
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,7 +62,7 @@ public class Main implements WebMvcConfigurer {
     @SuppressFBWarnings({"WMI_WRONG_MAP_ITERATOR"})
     public static void main(String[] args) {
         Map<String, String> env = System.getenv();
-        if(env.containsKey(MF_PROPERTIES))
+        if (env.containsKey(MF_PROPERTIES))
             propertiesFile = env.get(MF_PROPERTIES);
 
         // Define Options
@@ -113,7 +113,7 @@ public class Main implements WebMvcConfigurer {
             dbPass = cmd.getOptionValue(DB_PASS);
 
             SpringApplication.run(Main.class, args);
-        } catch(ParseException e) {
+        } catch (ParseException e) {
             System.err.println(e.getMessage());
             formatter.printHelp("MetaHL Fabric", options);
         }
@@ -129,10 +129,10 @@ public class Main implements WebMvcConfigurer {
     public PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
         PropertySourcesPlaceholderConfigurer properties =
                 new PropertySourcesPlaceholderConfigurer();
-        if(propertiesFile != null) {
-            Resource[] resources = new Resource[ ]
-                    { new ClassPathResource("application.properties"), new ClassPathResource("application.yml"),
-                            new FileSystemResource(propertiesFile)  };
+        if (propertiesFile != null) {
+            Resource[] resources = new Resource[]
+                    {new ClassPathResource("application.properties"), new ClassPathResource("application.yml"),
+                            new FileSystemResource(propertiesFile)};
             properties.setLocations(resources);
         }
         properties.setIgnoreResourceNotFound(false);

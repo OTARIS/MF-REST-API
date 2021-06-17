@@ -3,11 +3,11 @@ spring:
 
 # Member Info
 org: DeoniMSP
-cert: deoni_admin_cert.pem
-pk: deoni_private_key
+cert: admin_cert.pem
+pk: private_key
 
 # Network Info
-network: connection_deoni.json
+network: connection.json
 channel: cheese
 chaincode: nutrisafe-chaincode
 

@@ -1,6 +1,5 @@
 package de.metahlfabric.authtoken;
 
-import de.metahlfabric.functionrights.FunctionRightProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
@@ -16,20 +15,20 @@ import java.io.IOException;
 /**
  * The TokenFilter utilizes a {@link JwtTokenProvider} and an {@link OAuthTokenProvider} in order to filter invalid
  * tokens in requests.
- *
+ * <p>
  * Instantiate this and add it to the
  * {@link org.springframework.security.config.annotation.web.builders.HttpSecurity HttpSecurity} filter chain.
  *
  * @author Dennis Lamken
- *
+ * <p>
  * Copyright 2021 OTARIS Interactive Services GmbH
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.

@@ -28,15 +28,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * This class provides useful functions for accessing the Hyperledger® Fabric blockchain.
  *
  * @author Dennis Lamken, Tobias Wagner, Kathrin Kleinhammer
- *
+ * <p>
  * Copyright 2021 OTARIS Interactive Services GmbH
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,7 @@ public class Utils {
 
     public ExecutorService executorService = Executors.newCachedThreadPool();
 
-    private HyperledgerConfig config;
+    private final HyperledgerConfig config;
     private Network network = null;
     private String alarmFlag = null;
     Consumer<ContractEvent> alarmConsumer = null;
@@ -121,13 +121,13 @@ public class Utils {
                 Gateway.Builder builder = Gateway.createBuilder()
                         .identity(loadWallet(), config.getOrg())
                         .networkConfig(fileInputStream);
-                        //.discovery(true);
+                //.discovery(true);
                 Gateway gateway = builder.connect();
 
                 network = gateway.getNetwork(config.getChannel());
             }
             contract = network.getContract(config.getChaincode());
-            if(alarmConsumer == null)
+            if (alarmConsumer == null)
                 alarmConsumer = contract.addContractListener(this::alarmActivated,
                         Pattern.compile("alarm", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE));
 
@@ -166,7 +166,7 @@ public class Utils {
         return ret;
     }
 
-    public String evaluateTransaction(final String function, final String[] args) throws Exception {
+    public String evaluateTransaction(final String function, final String[] args) {
         String ret = "";
         try {
             Contract contract = prepareTransaction();
@@ -196,9 +196,11 @@ public class Utils {
     }
 
     public void alarmActivated(ContractEvent e) {
-        String pl = new String(e.getPayload().get(), UTF_8);
-        JsonObject ret = (JsonObject) JsonParser.parseString(pl);
-        alarmFlag = ret.get("key").toString();
-        executorService.notifyAll();
+        if (e.getPayload().isPresent()) {
+            String pl = new String(e.getPayload().get(), UTF_8);
+            JsonObject ret = (JsonObject) JsonParser.parseString(pl);
+            alarmFlag = ret.get("key").toString();
+            executorService.notifyAll();
+        }
     }
 }

@@ -27,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 /**
  * This class configures the database and provides access to it.
@@ -144,8 +145,18 @@ public class UserDatabaseConfig {
             authorities.add(new SimpleGrantedAuthority(ROLE_MEMBER));
             authorities.add(new SimpleGrantedAuthority(ROLE_ADMIN));
             Map<String, String> env = System.getenv();
+            String pw;
+            if (env.containsKey(MF_ADMIN_PW)) {
+                pw = env.get(MF_ADMIN_PW);
+            } else {
+                System.out.println("[MF] Please enter your initial admin password:");
+                Scanner sc = new Scanner(System.in);
+                do {
+                    pw = sc.nextLine();
+                } while (isPasswordInvalid(pw));
+            }
             UserDetails user = new org.springframework.security.core.userdetails.User("admin",
-                    new BCryptPasswordEncoder().encode(env.get(MF_ADMIN_PW) == null ? "12345678" : env.get(MF_ADMIN_PW)), authorities);
+                    new BCryptPasswordEncoder().encode(pw), authorities);
             userDetailsManager.createUser(user);
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('admin', '" + DEFAULT_READ_WHITELIST + "')");
             jdbcTemplate.execute("insert into user_to_whitelist(username, whitelist) values ('admin', '" + DEFAULT_WRITE_WHITELIST + "')");
@@ -155,6 +166,14 @@ public class UserDatabaseConfig {
         }
 
         return jdbcTemplate;
+    }
+
+    private boolean isPasswordInvalid(String pw) {
+        if (pw == null || pw.length() < 8) {
+            System.out.println("[MF] Password is too short! Please choose a password with at least eight characters.");
+            return false;
+        } else
+            return true;
     }
 
     @Bean

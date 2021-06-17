@@ -1,0 +1,31 @@
+version: '3'
+services:
+  mfrestapi:
+    build: .
+    env_file:
+      - mf.env
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./templates/example/:/app/config/
+    links:
+      - db:db
+    networks:
+      - mf
+  db:
+    image: postgres:alpine
+    env_file:
+      - mf.env
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - mf
+
+networks:
+  mf:
+    driver: bridge

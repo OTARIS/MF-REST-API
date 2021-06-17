@@ -1,3 +1,6 @@
+#!/bin/bash
+echo "    Saving connection.json to $1"
+cat << EOF > $1
 {
   "name": "basic-network",
   "version": "1.0.0",
@@ -13,7 +16,7 @@
     }
   },
   "channels": {
-    "cheese": {
+    "trackandtrace": {
       "orderers": [
         "orderer.unibw.de"
       ],
@@ -37,28 +40,28 @@
   },
   "orderers": {
     "orderer.unibw.de": {
-      "url": "grpcs://137.193.112.87:7050",
+      "url": "grpcs://${MF_HOST}:7050",
       "grpcOptions": {
         "ssl-target-name-override": "orderer.unibw.de",
         "hostnameOverride": "orderer.unibw.de"
       },
       "tlsCACerts": {
-        "path": "C:\\NutriSafe\\Zertifikate\\orderer_tlsca_cert.crt"
+        "path": "/app/config/orderer_tlsca_cert.crt"
       }
     }
   },
   "peers": {
     "peer0.deoni.de": {
-      "url": "grpcs://137.193.112.87:7051",
+      "url": "grpcs://${MF_HOST}:7051",
       "grpcOptions": {
         "ssl-target-name-override": "peer0.deoni.de",
         "hostnameOverride": "peer0.deoni.de"
       },
       "tlsCACerts": {
-        "path": "C:\\NutriSafe\\Zertifikate\\deoni_tlsca_cert.crt"
+        "path": "/app/config/deoni_tlsca_cert.crt"
       }
     }
   }
 
 }
-
+EOF

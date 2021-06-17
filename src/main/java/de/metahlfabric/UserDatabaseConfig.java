@@ -23,6 +23,7 @@ import org.springframework.security.provisioning.UserDetailsManager;
 
 import javax.sql.DataSource;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
@@ -150,7 +151,7 @@ public class UserDatabaseConfig {
                 pw = env.get(MF_ADMIN_PW);
             } else {
                 System.out.println("[MF] Please enter your initial admin password:");
-                Scanner sc = new Scanner(System.in);
+                Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
                 do {
                     pw = sc.nextLine();
                 } while (isPasswordInvalid(pw));

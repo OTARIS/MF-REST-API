@@ -38,7 +38,9 @@ Now you should be ready to go!
 
 ## Usage ##
 
-The REST API offers the following basic commands:
+We provide you a [postman collection](https://github.com/OTARIS/MF-REST-API/blob/master/templates/example/MetaHL_fabric.postman_collection.json "MetaHL Fabric postman collection") with some example calls which work in combination with the [MetaHL Fabric Chain Code](https://github.com/OTARIS/MF-Chaincode/ "MetaHL Fabric Chain Code").
+
+The REST API itself offers the following basic commands:
 
 ### POST .../auth ###
 This command is used for your authentication. Send a POST request with a JSON object in its body containing your username and password in order to receive a JWT token. You need this token for the authorization of other API calls.

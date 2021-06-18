@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "4e79b775-c657-4915-add3-ab3f498ad6cf",
+		"_postman_id": "91c37bff-9d7b-4667-a4bc-5817b67dbb52",
 		"name": "NutriSafe",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -74,6 +74,47 @@
 			"response": []
 		},
 		{
+			"name": "get Attributes Of Product With Version",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"connection": true,
+					"accept-encoding": true,
+					"accept": true,
+					"user-agent": true
+				}
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/get?function=META_getAttributesOfProductWithVersion&args=milk,1",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"get"
+					],
+					"query": [
+						{
+							"key": "function",
+							"value": "META_getAttributesOfProductWithVersion"
+						},
+						{
+							"key": "args",
+							"value": "milk,1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "new attribute def",
 			"request": {
 				"method": "POST",
@@ -86,7 +127,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"attribute\":\"Quality\",\r\n    \"attrValue\":\"Integer\"\r\n}",
+					"raw": "{\r\n    \"attribute\":\"Quality\",\r\n    \"datatype\":\"Integer\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -113,6 +154,44 @@
 		},
 		{
 			"name": "new product def",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"product\":\"milk\",\r\n    \"attributes\":[\"Fat\", \"Quality\"]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/submit?function=META_addProductDefinition",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"submit"
+					],
+					"query": [
+						{
+							"key": "function",
+							"value": "META_addProductDefinition"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "delete Product def",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -378,6 +457,44 @@
 			"response": []
 		},
 		{
+			"name": "deactivate alarm",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"type": "text",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"id\":\"YOGURT\"  \r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/submit?function=deactivateAlarm",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"submit"
+					],
+					"query": [
+						{
+							"key": "function",
+							"value": "deactivateAlarm"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "add predecessor",
 			"request": {
 				"method": "POST",
@@ -390,7 +507,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"preIds\":\"MILK1\",\r\n    \"id\":\"MILK2\",\r\n    \"amountDif\":-80\r\n    \r\n}",
+					"raw": "{\r\n    \"preIds\":\"milk\",\r\n    \"id\":\"milk3\",\r\n    \"amountDif\":-80,\r\n    \"addAmount\":1\r\n    \r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -466,7 +583,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"id\": \"MILK10\",\r\n    \"pdc\": \"FarmCollection\",\r\n    \"product\": \"milk\",\r\n    \"amount\": \"100\",\r\n    \"unit\": \"Liter\",\r\n    \"attributes\": [\"Quality\"],\r\n    \"attrValues\": [\"100\"]\r\n  \r\n}\r\n    \r\n\r\n",
+					"raw": "{\r\n    \"id\": \"MILK\",\r\n    \"pdc\": \"\",\r\n    \"product\": \"milk\",\r\n    \"amount\": \"100\",\r\n    \"unit\": \"Liter\",\r\n    \"attributes\": [\"Quality\"],\r\n    \"attrValues\": [\"100\"]\r\n  \r\n}\r\n    \r\n\r\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -504,7 +621,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"selector\":{\r\n        \"actualOwner\":\"DeoniMSP\",\r\n        \"amount\": {\r\n            \"$ne\":0\r\n        }\r\n         \r\n    }\r\n}\r\n    \r\n\r\n",
+					"raw": "{\r\n    \"whitelist\": \"DEFAULT_WRITE_WH%\",\r\n    \"username\": \"n%\"\r\n}\r\n    \r\n\r\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -512,12 +629,18 @@
 					}
 				},
 				"url": {
-					"raw": "{{url}}/select",
+					"raw": "{{url}}/select?what=function",
 					"host": [
 						"{{url}}"
 					],
 					"path": [
 						"select"
+					],
+					"query": [
+						{
+							"key": "what",
+							"value": "function"
+						}
 					]
 				}
 			},
@@ -569,7 +692,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"id\":\"MILK1\"\r\n}",
+					"raw": "{\r\n    \"id\":\"YOGURT\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -626,6 +749,82 @@
 						{
 							"key": "function",
 							"value": "createUser"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"type": "text",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\":\"public\",\r\n    \"password\":\"1234567890\",\r\n    \"newPassword\": \"12345678\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/submit?function=updatePassword",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"submit"
+					],
+					"query": [
+						{
+							"key": "function",
+							"value": "updatePassword"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "activate oauth",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"type": "text",
+						"value": "Bearer {{jwt_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\":\"public\",\r\n    \"password\":\"1234567890\",\r\n    \"newPassword\": \"12345678\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/submit?function=updatePassword",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"submit"
+					],
+					"query": [
+						{
+							"key": "function",
+							"value": "updatePassword"
 						}
 					]
 				}
@@ -761,7 +960,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n   \"whitelist\":\"MY_WHITELIST\"\r\n}",
+					"raw": "{\r\n   \"whitelist\":\"DEFAULT_READ_WHITELIST\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -1032,6 +1231,41 @@
 			"response": []
 		},
 		{
+			"name": "get users by authority",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/get?function=getUserInfoOfUser&args=nutriuser",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"get"
+					],
+					"query": [
+						{
+							"key": "function",
+							"value": "getUserInfoOfUser"
+						},
+						{
+							"key": "args",
+							"value": "nutriuser"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "get whitelists",
 			"request": {
 				"method": "GET",
@@ -1060,6 +1294,5 @@
 			},
 			"response": []
 		}
-	],
-	"protocolProfileBehavior": {}
+	]
 }

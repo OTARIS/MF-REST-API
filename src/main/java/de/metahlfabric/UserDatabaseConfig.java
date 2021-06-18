@@ -150,11 +150,15 @@ public class UserDatabaseConfig {
             if (env.containsKey(MF_ADMIN_PW)) {
                 pw = env.get(MF_ADMIN_PW);
             } else {
-                System.out.println("[MF] Please enter your initial admin password:");
-                Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
-                do {
-                    pw = sc.nextLine();
-                } while (isPasswordInvalid(pw));
+                if(System.getProperty("spring.profiles.active").equalsIgnoreCase("test"))
+                    pw = "12345678";
+                else {
+                    System.out.println("[MF] Please enter your initial admin password:");
+                    Scanner sc = new Scanner(System.in, StandardCharsets.UTF_8);
+                    do {
+                        pw = sc.nextLine();
+                    } while (isPasswordInvalid(pw));
+                }
             }
             UserDetails user = new org.springframework.security.core.userdetails.User("admin",
                     new BCryptPasswordEncoder().encode(pw), authorities);
